@@ -1,0 +1,22 @@
+{
+  "name": "JADILO Jadwal Driver Logistik",
+  "short_name": "JADILO",
+  "description": "Sistem Koordinasi Distribusi dan Jadwal Driver Logistik WH JADILO",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#1e3a8a",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
