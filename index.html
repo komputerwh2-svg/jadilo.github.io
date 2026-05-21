@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2563eb">
-    <title>Jadwal Driver Logistik v0.1.7 beta</title>
+    <title>Jadwal Driver Logistik v0.1.8 beta</title>
     <link rel="icon" type="image/jpeg" href="icon.png">
     <link rel="apple-touch-icon" href="icon.jpg">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -281,7 +281,7 @@
     <div id="main-header" class="bg-gradient-to-br from-blue-600 to-blue-800 dark:from-slate-800 dark:to-slate-900 text-white p-6 pb-4 rounded-b-[40px] shadow-lg sticky top-0 z-50 transition-colors duration-300">
         
         <div class="absolute top-6 right-6 bg-white/20 dark:bg-slate-700/40 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold border border-white/30 dark:border-slate-600/50 tracking-wide">
-            v0.1.7 beta
+            v0.1.8 beta
         </div>
         
         <h1 class="text-xl font-black tracking-wider text-white dark:text-slate-100">J A D I L O</h1>
@@ -471,11 +471,11 @@
             <div class="mt-10 space-y-3 text-left">
                 <div class="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/60 shadow-sm transition-colors">
                     <span class="text-[11px] text-slate-600 dark:text-slate-400 font-bold">Versi</span>
-                    <span class="text-[11px] bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full font-bold">v0.1.7 beta</span>
+                    <span class="text-[11px] bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full font-bold">v0.1.8 beta</span>
                 </div>
                 <div class="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/60 shadow-sm transition-colors">
                     <span class="text-[11px] text-slate-600 dark:text-slate-400 font-bold">Update Terakhir</span>
-                    <span class="text-[11px] text-slate-800 dark:text-slate-200 font-bold">20 Mei 2026</span>
+                    <span class="text-[11px] text-slate-800 dark:text-slate-200 font-bold">21 Mei 2026</span>
                 </div>
             </div>
 
@@ -486,10 +486,19 @@
                 
                 <div class="history-container">
                     
-                    <div class="timeline-item border-l-2 border-slate-200 dark:border-slate-800 pl-4 pb-6 relative">
-                        <div class="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-red-600 dark:bg-red-500 animate-pulse"></div>
-                        
-                        <span class="text-[11px] font-black text-red-600 dark:text-red-500">v0.1.7 | 20 Mei 2026 (Terbaru)</span>
+                    <div>
+                        <span class="text-[11px] font-black text-red-600 dark:text-red-500">v0.1.8 | 21 Mei 2026 (Terbaru)</span>
+                        <ul class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 list-disc ml-4 space-y-1 leading-relaxed">
+                            <li><strong>PWA Core Manifest Implementation:</strong> Penyediaan file konfigurasi <code>manifest.json</code> eksternal serta pembaruan tag metadata header aplikasi untuk memenuhi standar pemenuhan kriteria instalasi mandiri (*Standalone Chrome App*) langsung dari address bar browser.</li>
+                            <li><strong>Path-Routing Isolation Fix:</strong> Transisi penulisan alamat pemicu berkas dari path absolut (<code>/</code>) menuju path relatif (<code>./</code>) pada skrip registrasi Service Worker dan daftar <code>urlsToCache</code> guna menjamin kelancaran muat offline di dalam sub-folder repositori hosting GitHub Pages.</li>
+                            <li><strong>Asynchronous Notification Permission Flow:</strong> Penyelarasan siklus hidup pemanggilan <code>Notification.requestPermission()</code> melalui skema waktu tunda (*timeout sequence*) 1 detik pasca Service Worker berstatus aktif guna menghindari bentrokan memori pada saat *load* awal halaman.</li>
+                            <li><strong>Integrated Notification Sub-Page Manual:</strong> Pembangunan komponen antarmuka modular <code>#notifikasi-page</code> berbasis Tailwind CSS yang seragam dengan sub-halaman tema, menyajikan panduan diagnosis visual operasional Windows *Focus Assist* serta integrasi tombol uji coba interaktif.</li>
+                            <li><strong>State-Aware Background Notification Push:</strong> Implementasi logika pendengar chat realtime Firebase yang terintegrasi dengan metode <code>registration.showNotification()</code> dan <code>document.visibilityState</code>, mengizinkan penembakan banner notifikasi resmi ke sistem operasi hanya saat aplikasi berada di latar belakang (*minimize*).</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <span class="text-[11px] font-black text-slate-400 dark:text-slate-600">v0.1.7 | 20 Mei 2026</span>
                         <ul class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 list-disc ml-4 space-y-1 leading-relaxed">
                             <li><strong>Deterministic Index Remapping:</strong> Implementasi parameter <code>indexRender</code> pada callback loop array <code>filteredData.map()</code> untuk mengunci koordinat elemen DOM secara absolut guna menghindari duplikasi dan salah sasaran pembaruan status.</li>
                             <li><strong>Bidirectional Modal Bridge:</strong> Integrasi atribut data jembatan dinamis (<code>data-index-render</code>) pada tombol eksekusi <code>btn-simpan-modal</code> sebagai media komunikasi runtime antara komponen penampil jadwal dengan form data mutasi modal update.</li>
@@ -2118,7 +2127,7 @@
 
         /**
          * ====================================================================
-         * PEMBARUAN FUNGSI openSubPage() & TEMA SYSTEM (v0.1.7 beta Update)
+         * PEMBARUAN FUNGSI openSubPage() & TEMA SYSTEM (v0.1.8 beta Update)
          * Mengontrol sub-halaman, pemuatan foto, serta inisialisasi tema visual.
          * Default Version: v1.9.15 (Theme System Integration)
          * ====================================================================
