@@ -1201,8 +1201,8 @@
         }
 
         /**
-         * 16. PERBAIKAN: FUNGSI KENDALI TAMPILAN TOMBOL CHAT
-         * Menampilkan tombol chat hanya jika user telah berhasil login / masuk sebagai tamu.
+         * 16. PERBAIKAN: FUNGSI KENDALI TAMPILAN TOMBOL CHAT (v0.1.8)
+         * Menampilkan tombol chat hanya jika user telah login DAN bukan sebagai divisi TAMU / GUEST.
          */
         function aturVisibilitasChat() {
             const chatBubble = document.getElementById('chat-bubble');
@@ -1211,142 +1211,25 @@
             // Proteksi awal: Cegah error jika elemen HTML chat-bubble belum ada di DOM
             if (!chatBubble) return;
 
-            // LANGSUNG CEK SESSION: Jika ada user aktif (termasuk 'Tamu Spesial'), langsung tampilkan!
+            // Cek Session Validitas Login
             if (userAktif && userAktif.trim() !== "") {
-                chatBubble.classList.remove('hidden');
-                console.log("Chat Bubble: Tampil untuk user -> " + userAktif);
+                const namaUserBersih = userAktif.trim().toLowerCase();
+
+                // VALIDASI DIVISI TAMU: Jika user adalah guest atau tamu, sembunyikan tombol chat
+                if (namaUserBersih === 'guest' || namaUserBersih === 'tamu') {
+                    chatBubble.classList.add('hidden');
+                    console.log(`Chat Bubble: Tersembunyi untuk Divisi Tamu (${userAktif}).`);
+                } else {
+                    // Jika user resmi (Admin/Supir/Gudang WH), tampilkan tombol chat
+                    chatBubble.classList.remove('hidden');
+                    console.log("Chat Bubble: Tampil untuk user resmi -> " + userAktif);
+                }
             } else {
-                // Jika belum login / di halaman login awal, sembunyikan
+                // Jika belum login / berada di halaman login awal, sembunyikan
                 chatBubble.classList.add('hidden');
                 console.log("Chat Bubble: Tersembunyi karena belum ada session login.");
             }
         }
-
-        /**
-         * 17. REVISI PATEN FINAL: FUNGSI FLOATING CHAT BUBBLE (ALUR FACEBOOK MESSENGER MURNI)
-         * - Meniru 100% perilaku Messenger setelah mengeliminasi bentrokan onclick HTML.
-         * - Geser = Hanya Pindah Posisi ke Magnet; Klik/Ketuk Diam = Buka Jendela Chat.
-         */
-        (function inisialisasiDragChat() {
-            const el = document.getElementById('chat-bubble');
-            const handle = document.getElementById('chat-button-handle');
-            if (!el || !handle) return;
-
-            let mouseX = 0, mouseY = 0;
-            let startX = 0, startY = 0;
-            let isDragging = false; 
-            let waktuMulaiMulai = 0;
-
-            // Batas area operasional aman layar aplikasi JADILO
-            const TINGGI_BANNER_BIRU = 175; 
-            const TINGGI_TAB_BAWAH = 85;   
-            const MARGIN_SAMPING = 16;     
-
-            // Daftarkan trigger sentuhan awal (PC & Mobile)
-            handle.addEventListener('mousedown', awalSentuh);
-            handle.addEventListener('touchstart', awalSentuh, { passive: true });
-
-            function awalSentuh(e) {
-                waktuMulaiMulai = new Date().getTime();
-                isDragging = false; // Reset status setiap kali disentuh baru
-
-                // Matikan transisi css agar pergerakan bubble menempel instan tanpa delay di kursor/jari
-                el.classList.remove('transition-all', 'duration-300');
-
-                // Dapatkan koordinat murni saat layar mulai disentuh
-                const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-                const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-
-                // Catat posisi awal kursor dan posisi fisik bubble saat ini
-                mouseX = clientX;
-                mouseY = clientY;
-                startX = el.offsetLeft;
-                startY = el.offsetTop;
-
-                // Pasang event listener pergerakan secara dinamis pada level document
-                document.addEventListener('mousemove', prosesSeret);
-                document.addEventListener('touchmove', prosesSeret, { passive: false });
-                document.addEventListener('mouseup', akhirSentuh);
-                document.addEventListener('touchend', akhirSentuh);
-            }
-
-            function prosesSeret(e) {
-                const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-                const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-
-                // Hitung seberapa jauh jarak perpindahan dari titik awal sentuh
-                const selisihX = clientX - mouseX;
-                const selisihY = clientY - mouseY;
-
-                // Toleransi sensitivitas getaran jari (Jika geser di bawah 6px, abaikan)
-                if (Math.abs(selisihX) < 6 && Math.abs(selisihY) < 6) {
-                    return;
-                }
-
-                // KUNCI UTAMA: Jika geseran valid, tandai sebagai DRAGGING aktif! Jendela chat dilarang terbuka!
-                isDragging = true;
-
-                if (e.cancelable) e.preventDefault();
-
-                // Hitung posisi target baru untuk bubble chat
-                let targetLeft = startX + selisihX;
-                let targetTop = startY + selisihY;
-
-                // Hitung batas maksimal pergerakan horizontal dan vertikal layar
-                const batasKanan = window.innerWidth - el.offsetWidth - MARGIN_SAMPING;
-                const batasBawah = window.innerHeight - el.offsetHeight - TINGGI_TAB_BAWAH;
-
-                // Gunakan Boundary Lock agar tidak keluar jalur layout aplikasi
-                if (targetLeft < MARGIN_SAMPING) targetLeft = MARGIN_SAMPING;
-                if (targetLeft > batasKanan) targetLeft = batasKanan;
-                if (targetTop < TINGGI_BANNER_BIRU) targetTop = TINGGI_BANNER_BIRU;
-                if (targetTop > batasBawah) targetTop = batasBawah;
-
-                // Terapkan posisi real-time langsung ke elemen DOM
-                el.style.left = targetLeft + "px";
-                el.style.top = targetTop + "px";
-                el.style.right = "auto";
-                el.style.bottom = "auto";
-            }
-
-            function akhirSentuh() {
-                // Bersihkan dan copot semua event listener move/end agar memori browser steril kembali
-                document.removeEventListener('mousemove', prosesSeret);
-                document.removeEventListener('touchmove', prosesSeret);
-                document.removeEventListener('mouseup', akhirSentuh);
-                document.removeEventListener('touchend', akhirSentuh);
-
-                // Kembalikan efek transisi smooth animasi Tailwind untuk efek magnet bouncing
-                el.classList.add('transition-all', 'duration-300');
-
-                const durasiSentuh = new Date().getTime() - waktuMulaiMulai;
-
-                // EVALUASI AKHIR ALUR MESSENGER PATEN
-                if (!isDragging || durasiSentuh < 180) {
-                    // JIKA TIDAK SEDANG DRAGGING ATAU KETUKAN CEPAT -> MAKA INI ADALAH KLIK MURNI!
-                    if (typeof toggleChat === 'function') {
-                        toggleChat();
-                    }
-                } else {
-                    console.log("Hanya selesai menyeret bubble chat, mengunci jendela chat agar tetap tertutup.");
-                }
-
-                // Efek Magnet otomatis nempel ke sisi tepi layar terdekat (Kiri / Kanan)
-                bawaKeSisiMagnet();
-            }
-
-            function bawaKeSisiMagnet() {
-                const lebarLayar = window.innerWidth;
-                const posisiTengahTombol = el.offsetLeft + (el.offsetWidth / 2);
-                const batasKananLayar = lebarLayar - el.offsetWidth - MARGIN_SAMPING;
-
-                if (posisiTengahTombol < (lebarLayar / 2)) {
-                    el.style.left = MARGIN_SAMPING + "px";
-                } else {
-                    el.style.left = batasKananLayar + "px";
-                }
-            }
-        })();
 
 
         /**
@@ -1607,7 +1490,7 @@
 
             // --- PENEGAKAN FAB TOMBOL + ---
             if (navUpload) {
-                if (userLevel === 'ADMIN' || userDivisi === 'PENJ') {
+                if (userDivisi === 'ADMIN' || userDivisi === 'PENJ') {
                     bukaKunciElemen(navUpload);
                     if (hintUpload) hintUpload.classList.remove('hidden');
                     navUpload.onclick = function() { if (typeof handleFabClick === 'function') handleFabClick(this); }; 
