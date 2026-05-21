@@ -57,8 +57,8 @@ self.addEventListener('push', event => {
 
   const options = {
     body: data.pesan,
-    icon: './icon-chat.png', // Menggunakan './' agar aman di GitHub Pages
-    badge: './icon-badge.png',
+    icon: './icon.png',   // Swapped ke file asli yang ada di GitHub Anda
+    badge: './icon.png',  // Swapped ke file asli yang ada di GitHub Anda
     vibrate: [100, 50, 100],
     data: { url: './' }
   };
