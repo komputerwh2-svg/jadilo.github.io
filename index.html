@@ -486,7 +486,9 @@
                 
                 <div class="history-container">
                     
-                    <div>
+                    <div class="timeline-item border-l-2 border-slate-200 dark:border-slate-800 pl-4 pb-6 relative">
+                        <div class="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-red-600 dark:bg-red-500 animate-pulse"></div>
+                        
                         <span class="text-[11px] font-black text-red-600 dark:text-red-500">v0.1.8 | 21 Mei 2026 (Terbaru)</span>
                         <ul class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 list-disc ml-4 space-y-1 leading-relaxed">
                             <li><strong>PWA Core Manifest Implementation:</strong> Penyediaan file konfigurasi <code>manifest.json</code> eksternal serta pembaruan tag metadata header aplikasi untuk memenuhi standar pemenuhan kriteria instalasi mandiri (*Standalone Chrome App*) langsung dari address bar browser.</li>
@@ -497,8 +499,8 @@
                         </ul>
                     </div>
 
-                    <div>
-                        <span class="text-[11px] font-black text-slate-400 dark:text-slate-600">v0.1.7 | 20 Mei 2026</span>
+                    <div class="timeline-item border-l-2 border-slate-200 dark:border-slate-800 pl-4 pb-6 relative">
+                        <span class="text-[11px] font-bold text-blue-500 dark:text-blue-400">v0.1.7 | 20 Mei 2026</span>
                         <ul class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 list-disc ml-4 space-y-1 leading-relaxed">
                             <li><strong>Deterministic Index Remapping:</strong> Implementasi parameter <code>indexRender</code> pada callback loop array <code>filteredData.map()</code> untuk mengunci koordinat elemen DOM secara absolut guna menghindari duplikasi dan salah sasaran pembaruan status.</li>
                             <li><strong>Bidirectional Modal Bridge:</strong> Integrasi atribut data jembatan dinamis (<code>data-index-render</code>) pada tombol eksekusi <code>btn-simpan-modal</code> sebagai media komunikasi runtime antara komponen penampil jadwal dengan form data mutasi modal update.</li>
