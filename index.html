@@ -4272,11 +4272,17 @@
                         renotify: true
                     });
 
-                    // Tampilkan konfirmasi interaktif setelah 3 detik
+                    // PERBAIKAN: Menambahkan keterangan instruksi klik tombol agar user tidak bingung
                     setTimeout(() => {
-                        let konfirmasi = confirm("Apakah banner notifikasi muncul di pojok bawah layar komputer Anda?");
+                        let pesanPanduan = 
+                            "Apakah banner notifikasi JADILO berhasil muncul di pojok kanan bawah layar komputer Anda?\n\n" +
+                            "👉 SILAKAN KLIK [ OKE ] jika banner BERHASIL muncul.\n" +
+                            "👉 SILAKAN KLIK [ BATAL ] jika banner TIDAK MUNCUL sama sekali dan ikuti petunjuknya.";
+                        
+                        let konfirmasi = confirm(pesanPanduan);
+                        
                         if (!konfirmasi) {
-                            // Jika user menjawab TIDAK muncul, berikan edukasi panduan Windows Focus Assist
+                            // Jika user menekan tombol "Batal" (Artinya notifikasi tidak muncul/terblokir)
                             alert(
                                 "⚠️ NOTIFIKASI TERBLOKIR OLEH WINDOWS!\n\n" +
                                 "Meskipun izin browser aktif, Windows Anda sedang menyembunyikan pemberitahuan.\n\n" +
