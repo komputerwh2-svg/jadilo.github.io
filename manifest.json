@@ -1,7 +1,7 @@
 {
-  "name": "JADILO Jadwal Driver Logistik",
+  "name": "JADILO (Jadwal Driver Logistik)",
   "short_name": "JADILO",
-  "description": "Sistem Koordinasi Distribusi dan Jadwal Driver Logistik WH JADILO",
+  "description": "Sistem Koordinasi Distribusi dan Jadwal Driver Logistik",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#1e3a8a",
