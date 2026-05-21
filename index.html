@@ -2484,17 +2484,45 @@
         }
 
         function tampilkanNotifikasiLuar(pengirim, teks) {
+            // 1. Cek keamanan: Pastikan izin notifikasi bernilai "granted" (diizinkan)
             if (Notification.permission === "granted") {
-                navigator.serviceWorker.ready.then(registration => {
-                    registration.showNotification(`JADILO: Pesan dari ${pengirim}`, {
-                        body: teks,
-                        icon: 'icon.png', 
-                        badge: 'icon.png',
-                        vibrate: [100, 50, 100],
-                        tag: 'pesan-baru', 
-                        renotify: true
+                
+                // 2. Pastikan Service Worker terdaftar dan siap di browser
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(registration => {
+                        
+                        // 3. Eksekusi showNotification dengan parameter yang disempurnakan
+                        registration.showNotification(`JADILO: Pesan dari ${pengirim}`, {
+                            body: teks,
+                            // PERBAIKAN: Menggunakan './' agar aman dari error 404 di sub-folder GitHub Pages
+                            icon: './icon.png', 
+                            badge: './icon.png',
+                            vibrate: [100, 50, 100],
+                            // Mengelompokkan notifikasi chat dalam satu tag khusus
+                            tag: 'pesan-baru', 
+                            renotify: true,
+                            // TAMBAHAN KRUSIAL: Menyimpan URL agar saat notifikasi diklik, aplikasi langsung terbuka
+                            data: {
+                                url: window.location.href
+                            }
+                        });
+                        console.log(`[PWA] Berhasil mengirim sinyal notifikasi chat dari ${pengirim}`);
+                    }).catch(err => {
+                        console.error("[PWA] Service Worker belum siap:", err);
                     });
-                });
+                } else {
+                    // Jalur alternatif jika diakses lewat browser lama yang tidak mendukung PWA
+                    try {
+                        new Notification(`JADILO: Pesan dari ${pengirim}`, {
+                            body: teks,
+                            icon: './icon.png'
+                        });
+                    } catch (e) {
+                        console.error("[PWA] Gagal mengeksekusi alternatif notifikasi:", e);
+                    }
+                }
+            } else {
+                console.warn("[PWA] Gagal memunculkan notifikasi karena izin belum diberikan. Status saat ini:", Notification.permission);
             }
         }
 
