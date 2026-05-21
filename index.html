@@ -410,6 +410,14 @@
                 <i class="fa-solid fa-chevron-right text-slate-200 dark:text-slate-700 text-xs"></i>
             </div>
 
+            <div class="card p-3 shadow-sm mt-3">
+                <h5>🔔 Sistem Notifikasi Desktop</h5>
+                <p class="text-muted small">Jika Anda merasa tidak menerima pemberitahuan chat masuk di komputer, silakan lakukan uji coba sistem di bawah ini:</p>
+                <button class="btn btn-primary btn-sm" onclick="ujiCobaNotifikasiSistem()">
+                    🧪 Test Kirim Notifikasi ke Komputer
+                </button>
+            </div>
+
             <div class="menu-card bg-white dark:bg-slate-900 border border-red-50 dark:border-red-950/30 p-4 rounded-2xl flex items-center gap-4 mt-10 cursor-pointer shadow-sm" onclick="logout()">
                 <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-red-50 dark:bg-red-950/40 text-red-500 dark:text-red-400 flex-shrink-0"><i class="fa-solid fa-power-off"></i></div>
                 <div class="flex-grow"><h4 class="text-sm font-bold text-red-500 dark:text-red-400 uppercase tracking-wide">Keluar Akun</h4></div>
@@ -4244,6 +4252,43 @@
             } else {
                 // Jika status sudah 'granted' atau 'denied', gunakan konfigurasi yang sudah ada
                 console.log("Status notifikasi saat ini: " + Notification.permission);
+            }
+        }
+
+        function ujiCobaNotifikasiSistem() {
+            if (Notification.permission !== "granted") {
+                alert("Status Notifikasi JADILO di browser Anda belum diizinkan. Silakan klik ikon gembok di pojok atas lalu aktifkan sakelar Notifikasi.");
+                return;
+            }
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(registration => {
+                    // Tembak notifikasi pemicu uji coba
+                    registration.showNotification("JADILO: Test Sistem Sukses!", {
+                        body: "Jika Anda melihat banner ini, berarti setelan komputer Anda sudah benar.",
+                        icon: './icon.png',
+                        badge: './icon.png',
+                        tag: 'test-sistem',
+                        renotify: true
+                    });
+
+                    // Tampilkan konfirmasi interaktif setelah 3 detik
+                    setTimeout(() => {
+                        let konfirmasi = confirm("Apakah banner notifikasi muncul di pojok bawah layar komputer Anda?");
+                        if (!konfirmasi) {
+                            // Jika user menjawab TIDAK muncul, berikan edukasi panduan Windows Focus Assist
+                            alert(
+                                "⚠️ NOTIFIKASI TERBLOKIR OLEH WINDOWS!\n\n" +
+                                "Meskipun izin browser aktif, Windows Anda sedang menyembunyikan pemberitahuan.\n\n" +
+                                "Cara mengatasi:\n" +
+                                "1. Buka Menu Settings Windows (Tekan tombol Windows + I)\n" +
+                                "2. Pilih menu 'System' -> 'Focus assist'\n" +
+                                "3. Ubah centang dari 'Alarms only' / 'Priority only' menjadi 'OFF'.\n\n" +
+                                "Silakan coba test kembali setelah mode Focus Assist dimatikan."
+                            );
+                        }
+                    }, 3000);
+                });
             }
         }
 
