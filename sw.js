@@ -1,26 +1,66 @@
-// sw.js - Service Worker JADILO
-const CACHE_NAME = 'jadilo-cache-v1.3';
+// sw.js - Service Worker JADILO (Revisi v3.6.1)
+const CACHE_NAME = 'jadilo-cache-v0.1.7';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  // Tambahkan file CSS/JS utama Anda di sini
+  './',
+  './index.html',
+  './manifest.json'
 ];
 
+// 1. TAHAP INSTALASI: Simpan aset utama ke cache internal menggunakan path relatif ('./')
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+    caches.open(CACHE_NAME).then(cache => {
+      console.log('SW: Membuka cache dan mendaftarkan aset internal.');
+      return cache.addAll(urlsToCache);
+    })
+  );
+  // Langsung aktifkan SW baru tanpa menunggu tab browser ditutup
+  self.skipWaiting();
+});
+
+// 2. TAHAP AKTIVASI: Hapus sisa cache versi lama agar space penyimpanan bersih
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cache => {
+          if (cache !== CACHE_NAME) {
+            console.log('SW: Membersihkan cache usang -> ' + cache);
+            return caches.delete(cache);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
   );
 });
 
-// LOGIKA NOTIFIKASI SAAT APLIKASI TERTUTUP
+// 3. TAHAP FETCH: Strategi Network First untuk file utama agar data selalu update saat ada sinyal
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
+    })
+  );
+});
+
+// 4. LOGIKA NOTIFIKASI SAAT APLIKASI TERTUTUP (PUSH)
 self.addEventListener('push', event => {
-  const data = event.data.json();
+  let data = { nama: "Sistem", pesan: "Ada pembaruan data baru." };
+  
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {
+      data.pesan = event.data.text();
+    }
+  }
+
   const options = {
     body: data.pesan,
-    icon: 'icon-chat.png', // Ganti dengan path ikon Anda
-    badge: 'icon-badge.png',
+    icon: './icon-chat.png', // Menggunakan './' agar aman di GitHub Pages
+    badge: './icon-badge.png',
     vibrate: [100, 50, 100],
-    data: { url: '/' }
+    data: { url: './' }
   };
 
   event.waitUntil(
@@ -28,7 +68,25 @@ self.addEventListener('push', event => {
   );
 });
 
+// 5. EVENT DIKLIK: Buka atau fokuskan kembali ke aplikasi saat banner notifikasi diketuk driver
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  event.waitUntil(clients.openWindow(event.notification.data.url));
+  
+  const targetUrl = event.notification.data.url;
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+      // Jika aplikasi sudah terbuka di latar belakang, langsung fokuskan ke tab tersebut
+      for (let i = 0; i < windowClients.length; i++) {
+        const client = windowClients[i];
+        if (client.url.includes(targetUrl) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Jika belum terbuka sama sekali, buka jendela baru
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
 });
