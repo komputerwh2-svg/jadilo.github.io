@@ -4366,8 +4366,8 @@
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.ready.then(registration => {
                     // Tembak notifikasi pemicu uji coba
-                    registration.showNotification("JADILO: Test Sistem Sukses!", {
-                        body: "Jika Anda melihat banner ini, berarti setelan komputer Anda sudah benar.",
+                    registration.showNotification("JADILO: Test Notifikasi Sukses!", {
+                        body: "Jika Anda melihat banner pesan ini, berarti setelan komputer/hp Anda sudah benar.",
                         icon: './icon.png',
                         badge: './icon.png',
                         tag: 'test-sistem',
@@ -4377,7 +4377,7 @@
                     // PERBAIKAN: Menambahkan keterangan instruksi klik tombol agar user tidak bingung
                     setTimeout(() => {
                         let pesanPanduan = 
-                            "Apakah banner notifikasi JADILO berhasil muncul di pojok kanan bawah layar komputer Anda?\n\n" +
+                            "Apakah banner pesan notifikasi JADILO berhasil muncul di pojok kanan bawah layar komputer Anda?\n\n" +
                             "👉 SILAKAN KLIK [ OKE ] jika banner BERHASIL muncul.\n" +
                             "👉 SILAKAN KLIK [ BATAL ] jika banner TIDAK MUNCUL sama sekali dan ikuti petunjuknya.";
                         
