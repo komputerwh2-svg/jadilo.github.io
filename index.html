@@ -3520,7 +3520,7 @@
          * 6. REVISI: FUNGSI MEMUAT DATA JADWAL (VERSI REALTIME DIRECT - NO LOCAL CACHE)
          * Memastikan layar selalu memuat data murni secara real-time dari Firebase Server tanpa data hantu.
          * Default Version: v0.1.8 (With Integrated Live Global Notification Broadcast)
-         * Update: Revisi format pesan notifikasi WH-1 & WH-2 (Driver, Ekspedisi, Tujuan, Jumlah Muat, Jam)
+         * Update: Koreksi pemetaan field tujuan menggunakan properti 'kota' sesuai struktur Firebase
          */
         async function loadJadwal() {
             const container = document.getElementById('list-jadwal');
@@ -3572,6 +3572,7 @@
 
                                 const namaDriver = driverData.driver || driverData.Driver || "Driver";
                                 const namaEkspedisi = driverData.ekspedisi || driverData.Ekspedisi || "-";
+                                // KOREKSI: Menggunakan field 'kota' dari database Firebase
                                 const namaTujuan = driverData.kota || driverData.Kota || "-";
 
                                 // Membuat kunci penanda unik berbasis sessionStorage di device masing-masing
@@ -3596,13 +3597,13 @@
 
                                             tampilkanNotifikasiLuar(
                                                 `STATUS ARMADA: ${driverData.status}`, 
-                                                `🚚 ${namaDriver} (${namaEkspedisi}) tujuan ${namaTujuan} status ${driverData.status} jam ${jamUpdate}`,
+                                                `🚚 (${namaEkspedisi}) ${namaDriver} tujuan ${namaTujuan} status ${driverData.status} jam ${jamUpdate}`,
                                                 'logistik-update'
                                             );
                                         }
                                     }
 
-                                    // 2. REVISI: Deteksi Input Muatan Gudang WH-1 Selesai
+                                    // 2. Deteksi Input Muatan Gudang WH-1 Selesai
                                     if (prevWh1 !== null && prevWh1 !== parseInt(driverData.wh1 || 0)) {
                                         const nilaiWh1Baru = parseInt(driverData.wh1 || 0);
                                         if (nilaiWh1Baru > 0 && nilaiWh1Baru > prevWh1) {
@@ -3613,13 +3614,13 @@
 
                                             tampilkanNotifikasiLuar(
                                                 `WH-1 SELESAI MUAT`, 
-                                                `📦 ${namaDriver} (${namaEkspedisi}) ${namaTujuan} selesai dimuat di WH-1 sebanyak ${nilaiWh1Baru} Karton jam ${jamUpdate}`,
+                                                `📦 (${namaEkspedisi}) ${namaDriver} tujuan${namaTujuan} selesai dimuat di WH-1 sebanyak ${nilaiWh1Baru} Karton jam ${jamUpdate}`,
                                                 'logistik-update'
                                             );
                                         }
                                     }
 
-                                    // 3. REVISI: Deteksi Input Muatan Gudang WH-2 Selesai
+                                    // 3. Deteksi Input Muatan Gudang WH-2 Selesai
                                     if (prevWh2 !== null && prevWh2 !== parseInt(driverData.wh2 || 0)) {
                                         const nilaiWh2Baru = parseInt(driverData.wh2 || 0);
                                         if (nilaiWh2Baru > 0 && nilaiWh2Baru > prevWh2) {
@@ -3630,7 +3631,7 @@
 
                                             tampilkanNotifikasiLuar(
                                                 `WH-2 SELESAI MUAT`, 
-                                                `📦 ${namaDriver} (${namaEkspedisi}) ${namaTujuan} selesai dimuat di WH-2 sebanyak ${nilaiWh2Baru} Karton jam ${jamUpdate}`,
+                                                `📦 (${namaEkspedisi}) ${namaDriver} tujuan ${namaTujuan} selesai dimuat di WH-2 sebanyak ${nilaiWh2Baru} Karton jam ${jamUpdate}`,
                                                 'logistik-update'
                                             );
                                         }
