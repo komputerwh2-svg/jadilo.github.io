@@ -989,7 +989,6 @@
             }
 
             // 4. JALANKAN SYNC REALTIME CLOUD FIREBASE DIRECT
-            // Setelah tab visual aktif dan siap, baru pasang saluran listener Firebase
             if (typeof loadJadwal === "function") {
                 loadJadwal(); 
             } else if (typeof renderListKeContainer === "function") {
@@ -1019,126 +1018,6 @@
                 }, 5000);
             }
         });
-
-        // ====================================================================
-        // 5. AUTOMATED LIVE BROADCAST NOTIFICATION SYSTEM (v0.1.8)
-        // ====================================================================
-
-        /**
-         * Mengirimkan Notifikasi Push Sistem ke Perangkat
-         */
-        function kirimNotifikasiSistem(judul, pesan) {
-            // Cek jika izin diberikan dan tidak terblokir Windows Focus Assist
-            if ("Notification" in window && Notification.permission === "granted") {
-                
-                // Cek Service Worker untuk background process PWA
-                if (navigator.serviceWorker && navigator.serviceWorker.ready) {
-                    navigator.serviceWorker.ready.then(registration => {
-                        registration.showNotification(judul, {
-                            body: pesan,
-                            icon: 'icon.png',
-                            badge: 'icon.png',
-                            vibrate: [200, 100, 200],
-                            tag: 'logistik-update',
-                            renotify: true
-                        });
-                    });
-                } else {
-                    // Fallback web biasa
-                    new Notification(judul, {
-                        body: pesan,
-                        icon: 'icon.png'
-                    });
-                }
-            }
-        }
-
-        /**
-         * Inisialisasi Listener Firebase untuk Mendeteksi Perubahan Data Otomatis
-         */
-        function inisialisasiListenerNotifikasiLogistik() {
-            // Ganti 'jadwal_pengiriman' sesuai dengan nama path node Firebase Anda
-            const dbJadwalRef = firebase.database().ref('jadwal_pengiriman'); 
-            
-            // Flag penanda agar data lama saat pertama kali load tidak memicu notifikasi beruntun
-            let dataAwalSelesaiLoaded = false;
-            dbJadwalRef.once('value').then(() => {
-                dataAwalSelesaiLoaded = true;
-                console.log("Firebase Notification Listener: Siap memantau perubahan realtime.");
-            });
-
-            // A. DETEKSI UPLOAD JADWAL BARU
-            dbJadwalRef.on('child_added', (snapshot) => {
-                if (!dataAwalSelesaiLoaded) return; // Abaikan data lama saat load awal
-
-                const dataBaru = snapshot.val();
-                const tanggalJadwal = dataBaru.tanggal || 'Baru';
-                const totalDriver = dataBaru.total_driver || dataBaru.drivers ? Object.keys(dataBaru.drivers).length : 0;
-
-                const judul = `📅 JADWAL BARU DIUPLOAD!`;
-                const pesan = `Jadwal Pengiriman tanggal ${tanggalJadwal} telah tersedia dengan ${totalDriver} Driver Terjadwal.`;
-                
-                kirimNotifikasiSistem(judul, pesan);
-            });
-
-            // B. DETEKSI REVISI JADWAL ATAU UPDATE STATUS & MUATAN WAREHOUSE
-            dbJadwalRef.on('child_changed', (snapshot, prevChildKey) => {
-                if (!dataAwalSelesaiLoaded) return;
-
-                const dataBerubah = snapshot.val();
-                const tanggalJadwal = dataBerubah.tanggal || '';
-                
-                // Ambil user pengubah terakhir dari data session lokal untuk menghindari alert ke diri sendiri
-                const currentUser = (localStorage.getItem('activeUser') || '').toUpperCase().trim();
-                const infoPengubah = dataBerubah.last_updated_by ? `oleh ${dataBerubah.last_updated_by}` : '';
-
-                // Kasus 1: Ada penanda [REVISI] pada struktur master tanggal/jadwal
-                if (dataBerubah.status_jadwal === 'REVISI') {
-                    kirimNotifikasiSistem(
-                        `⚠️ JADWAL DIREVISI!`,
-                        `Jadwal Pengiriman tanggal ${tanggalJadwal} mengalami pembaruan data internal ${infoPengubah}.`
-                    );
-                    return; // Keluar agar tidak double notification
-                }
-
-                // Kasus 2: Deteksi Perubahan Status Armada Internal (Iterasi Driver)
-                // Catatan: Menyesuaikan jika struktur Firebase Anda bertingkat di dalam objek 'drivers'
-                if (dataBerubah.drivers) {
-                    Object.keys(dataBerubah.drivers).forEach(key => {
-                        const driverData = dataBerubah.drivers[key];
-                        
-                        // Cari data lama di cache lokal untuk membandingkan perubahan (Anti-Spam Alert)
-                        const cacheLokal = localCacheData.find(item => item.id == driverData.id);
-                        
-                        if (cacheLokal) {
-                            // Check 1: Perubahan Status Kedatangan (BELUM -> PENDING -> DATANG)
-                            if (cacheLokal.status !== driverData.status) {
-                                kirimNotifikasiSistem(
-                                    `🚚 STATUS ARMADA: ${driverData.status}`,
-                                    `Driver ${driverData.driver} (${driverData.ekspedisi || '-'}) dinyatakan ${driverData.status} pada jadwal ${tanggalJadwal}.`
-                                );
-                            }
-                            
-                            // Check 2: WH-1 Selesai Muat (Nilai berubah atau baru selesai diinput)
-                            if (cacheLokal.wh1 !== driverData.wh1 && driverData.wh1 > 0) {
-                                kirimNotifikasiSistem(
-                                    `📦 WH-1 SELESAI MUAT`,
-                                    `Driver ${driverData.driver} selesai dimuat di WH-1 sebanyak ${driverData.wh1} Karton.`
-                                );
-                            }
-
-                            // Check 3: WH-2 Selesai Muat
-                            if (cacheLokal.wh2 !== driverData.wh2 && driverData.wh2 > 0) {
-                                kirimNotifikasiSistem(
-                                    `📦 WH-2 SELESAI MUAT`,
-                                    `Driver ${driverData.driver} selesai dimuat di WH-2 sebanyak ${driverData.wh2} Karton.`
-                                );
-                            }
-                        }
-                    });
-                }
-            });
-        }
 
         /**
          * FUNGSI RESPONS GETAR TOMBOL (HAPTIC FEEDBACK SYSTEM)
@@ -2623,7 +2502,10 @@
             });
         }
 
-        function tampilkanNotifikasiLuar(pengirim, teks) {
+        // ====================================================================
+        // 4. UNIFIED PWA NOTIFICATION SYSTEM (v0.1.8 - CHAT & LOGISTICS COLLABORATION)
+        // ====================================================================
+        function tampilkanNotifikasiLuar(pengirim, teks, tagKategori = 'pesan-baru') {
             // 1. Cek keamanan: Pastikan izin notifikasi bernilai "granted" (diizinkan)
             if (Notification.permission === "granted") {
                 
@@ -2631,29 +2513,26 @@
                 if ('serviceWorker' in navigator) {
                     navigator.serviceWorker.ready.then(registration => {
                         
-                        // 3. Eksekusi showNotification dengan parameter yang disempurnakan
-                        registration.showNotification(`JADILO: Pesan dari ${pengirim}`, {
+                        // 3. Eksekusi showNotification dengan tag dinamis agar chat & logistik tidak saling tumpuk
+                        registration.showNotification(`JADILO: ${pengirim}`, {
                             body: teks,
-                            // PERBAIKAN: Menggunakan './' agar aman dari error 404 di sub-folder GitHub Pages
                             icon: './icon.png', 
                             badge: './icon.png',
                             vibrate: [100, 50, 100],
-                            // Mengelompokkan notifikasi chat dalam satu tag khusus
-                            tag: 'pesan-baru', 
+                            tag: tagKategori, // 'pesan-baru' untuk chat, 'logistik-update' untuk status gudang
                             renotify: true,
-                            // TAMBAHAN KRUSIAL: Menyimpan URL agar saat notifikasi diklik, aplikasi langsung terbuka
                             data: {
                                 url: window.location.href
                             }
                         });
-                        console.log(`[PWA] Berhasil mengirim sinyal notifikasi chat dari ${pengirim}`);
+                        console.log(`[PWA Broadcast] Sinyal [${tagKategori}] berhasil dikirim: ${pengirim}`);
                     }).catch(err => {
                         console.error("[PWA] Service Worker belum siap:", err);
                     });
                 } else {
-                    // Jalur alternatif jika diakses lewat browser lama yang tidak mendukung PWA
+                    // Jalur alternatif jika diakses lewat browser lama / non-PWA
                     try {
-                        new Notification(`JADILO: Pesan dari ${pengirim}`, {
+                        new Notification(`JADILO: ${pengirim}`, {
                             body: teks,
                             icon: './icon.png'
                         });
@@ -2662,8 +2541,95 @@
                     }
                 }
             } else {
-                console.warn("[PWA] Gagal memunculkan notifikasi karena izin belum diberikan. Status saat ini:", Notification.permission);
+                console.warn("[PWA] Gagal memunculkan notifikasi karena izin belum diberikan.");
             }
+        }
+
+        /**
+        * Inisialisasi Listener Firebase untuk Pemantauan Logistik Real-Time Global
+        */
+        function inisialisasiListenerNotifikasiLogistik() {
+            const dbJadwalRef = firebase.database().ref('master_jadwal'); 
+            
+            // Flag pengaman anti-spam saat halaman pertama kali dibuka
+            let dataAwalSelesaiLoaded = false;
+            dbJadwalRef.once('value').then(() => {
+                dataAwalSelesaiLoaded = true;
+                console.log("🔊 Broadcast Logistik: Terkoneksi sempurna dengan Firebase Database.");
+            });
+
+            // A. DETEKSI UPLOAD JADWAL BARU
+            dbJadwalRef.on('child_added', (snapshot) => {
+                if (!dataAwalSelesaiLoaded) return;
+
+                const dataHari = snapshot.val();
+                if (dataHari && dataHari.list) {
+                    tampilkanNotifikasiLuar(
+                        "JADWAL BARU", 
+                        `📅 Jadwal baru telah diupload! Silakan periksa daftar armada pengiriman.`,
+                        "logistik-update"
+                    );
+                }
+            });
+
+            // B. DETEKSI REVISI JADWAL, STATUS DATANG/PENDING, & INPUT MUATAN GUDANG
+            dbJadwalRef.on('child_changed', (snapshot) => {
+                if (!dataAwalSelesaiLoaded) return;
+
+                const dataHari = snapshot.val(); 
+                
+                // Cek Revisi Jadwal Utama
+                if (dataHari && dataHari.status_jadwal === 'REVISI') {
+                    tampilkanNotifikasiLuar(
+                        "JADWAL DIREVISI", 
+                        `⚠️ Perubahan data internal terdeteksi pada daftar pengiriman hari ini.`,
+                        "logistik-update"
+                    );
+                    return;
+                }
+
+                // Cek perubahan data spesifik driver di dalam array 'list'
+                if (dataHari && dataHari.list && Array.isArray(dataHari.list)) {
+                    dataHari.list.forEach((driverData) => {
+                        if (!driverData || !driverData.id) return;
+
+                        // Bandingkan dengan Cache Lokal di komputer masing-masing operator/user
+                        const cacheLokal = window.localCacheData ? window.localCacheData.find(item => item.id == driverData.id) : null;
+                        
+                        if (cacheLokal) {
+                            const namaDriver = driverData.driver || driverData.Driver || "Driver";
+                            const namaEkspedisi = driverData.ekspedisi || driverData.Ekspedisi || "-";
+
+                            // 1. Cek Perubahan Status Kedatangan (PENDING / DATANG)
+                            if (cacheLokal.status !== driverData.status && (driverData.status === 'PENDING' || driverData.status === 'DATANG')) {
+                                tampilkanNotifikasiLuar(
+                                    `STATUS ARMADA: ${driverData.status}`, 
+                                    `🚚 ${namaDriver} (${namaEkspedisi}) dinyatakan ${driverData.status}.`,
+                                    "logistik-update"
+                                );
+                            }
+                            
+                            // 2. Cek Pengisian Selesai Muat WH-1
+                            if (cacheLokal.wh1 !== driverData.wh1 && driverData.wh1 > 0) {
+                                tampilkanNotifikasiLuar(
+                                    `WH-1 SELESAI MUAT`, 
+                                    `📦 ${namaDriver} selesai dimuat di WH-1 sebanyak ${driverData.wh1} Karton.`,
+                                    "logistik-update"
+                                );
+                            }
+
+                            // 3. Cek Pengisian Selesai Muat WH-2
+                            if (cacheLokal.wh2 !== driverData.wh2 && driverData.wh2 > 0) {
+                                tampilkanNotifikasiLuar(
+                                    `WH-2 SELESAI MUAT`, 
+                                    `📦 ${namaDriver} selesai dimuat di WH-2 sebanyak ${driverData.wh2} Karton.`,
+                                    "logistik-update"
+                                );
+                            }
+                        }
+                    });
+                }
+            });
         }
 
         function dapatkanWarnaUser(nama) {
@@ -4162,178 +4128,178 @@
          * Update: Perbaikan deteksi urutan indeks array Firebase menggunakan data-index-render
          */
         async function simpanPerubahan(e) {
-    if (e) e.preventDefault(); 
-    
-    const id = document.getElementById('edit-id').value; 
-    const selectedStatus = document.querySelector('input[name="status"]:checked')?.value.toUpperCase();
-    const valWh1 = parseInt(document.getElementById('val-wh1').value) || 0;
-    const valWh2 = parseInt(document.getElementById('val-wh2').value) || 0;
-    
-    const userLevel = (localStorage.getItem('userLevel') || '').toUpperCase();
-    const userDivisi = (localStorage.getItem('userDivisi') || '').toUpperCase();
-    
-    // Ambil data index render asli dari tombol modal
-    const btnSimpan = document.getElementById('btn-simpan-modal');
-    const indexRenderAsli = btnSimpan ? parseInt(btnSimpan.getAttribute('data-index-render')) : null;
-    
-    const index = localCacheData.findIndex(item => item.id == id);
-    
-    if (index !== -1) {
-        const dataTarget = localCacheData[index];
+            if (e) e.preventDefault(); 
+            
+            const id = document.getElementById('edit-id').value; 
+            const selectedStatus = document.querySelector('input[name="status"]:checked')?.value.toUpperCase();
+            const valWh1 = parseInt(document.getElementById('val-wh1').value) || 0;
+            const valWh2 = parseInt(document.getElementById('val-wh2').value) || 0;
+            
+            const userLevel = (localStorage.getItem('userLevel') || '').toUpperCase();
+            const userDivisi = (localStorage.getItem('userDivisi') || '').toUpperCase();
+            
+            // Ambil data index render asli dari tombol modal
+            const btnSimpan = document.getElementById('btn-simpan-modal');
+            const indexRenderAsli = btnSimpan ? parseInt(btnSimpan.getAttribute('data-index-render')) : null;
+            
+            const index = localCacheData.findIndex(item => item.id == id);
+            
+            if (index !== -1) {
+                const dataTarget = localCacheData[index];
 
-        // Proteksi Awal: Cek Blokir Akses Terlebih Dahulu
-        if (userLevel === 'PENJ' || userLevel === 'TAMU' || userLevel === 'GUEST' || 
-            userDivisi === 'PENJ' || userDivisi === 'TAMU' || userDivisi === 'GUEST') {
-            alert("Akses Ditolak: Anda tidak memiliki izin untuk menyimpan data ini.");
-            return; 
-        }
+                // Proteksi Awal: Cek Blokir Akses Terlebih Dahulu
+                if (userLevel === 'PENJ' || userLevel === 'TAMU' || userLevel === 'GUEST' || 
+                    userDivisi === 'PENJ' || userDivisi === 'TAMU' || userDivisi === 'GUEST') {
+                    alert("Akses Ditolak: Anda tidak memiliki izin untuk menyimpan data ini.");
+                    return; 
+                }
 
-        let tglMentah = dataTarget.tglJadwal || dataTarget.tanggal || dataTarget.Tanggal || dataTarget.TGLJADWAL || "";
-        if (!tglMentah && id && id.includes('_')) {
-            tglMentah = id.split('_')[0]; 
-        }
-        
-        const stringHariFirebase = "hari_" + tglMentah.replace(/\s/g, '').toUpperCase(); 
-        
-        // SOLUSI UTAMA: Gunakan indexRenderAsli (urutan 0, 1, 2) dari penyaringan tanggal aktif, bukan index akumulasi global!
-        const indeksListFirebase = (indexRenderAsli !== null && !isNaN(indexRenderAsli)) ? indexRenderAsli : index;
+                let tglMentah = dataTarget.tglJadwal || dataTarget.tanggal || dataTarget.Tanggal || dataTarget.TGLJADWAL || "";
+                if (!tglMentah && id && id.includes('_')) {
+                    tglMentah = id.split('_')[0]; 
+                }
+                
+                const stringHariFirebase = "hari_" + tglMentah.replace(/\s/g, '').toUpperCase(); 
+                
+                // SOLUSI UTAMA: Gunakan indexRenderAsli (urutan 0, 1, 2) dari penyaringan tanggal aktif, bukan index akumulasi global!
+                const indeksListFirebase = (indexRenderAsli !== null && !isNaN(indexRenderAsli)) ? indexRenderAsli : index;
 
-        // Generate Waktu Sekarang (Format Jam Lokal - HH:MM)
-        const sekarang = new Date();
-        const jamTampil = sekarang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
+                // Generate Waktu Sekarang (Format Jam Lokal - HH:MM)
+                const sekarang = new Date();
+                const jamTampil = sekarang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
 
-        // Variabel bantu untuk mendeteksi trigger notifikasi di akhir pemrosesan data
-        let pemicuNotifStatus = false;
-        let pemicuNotifWh1 = false;
-        let pemicuNotifWh2 = false;
+                // Variabel bantu untuk mendeteksi trigger notifikasi di akhir pemrosesan data
+                let pemicuNotifStatus = false;
+                let pemicuNotifWh1 = false;
+                let pemicuNotifWh2 = false;
 
-        // --- TAHAP 1: LOGIKA PROSES & TIMESTAMP GUARD ---
-        
-        // A. Waktu Kedatangan / Pending
-        if (selectedStatus !== dataTarget.status) {
-            if (selectedStatus === 'DATANG' || selectedStatus === 'PENDING') {
-                localCacheData[index].timeStatus = jamTampil;
+                // --- TAHAP 1: LOGIKA PROSES & TIMESTAMP GUARD ---
+                
+                // A. Waktu Kedatangan / Pending
+                if (selectedStatus !== dataTarget.status) {
+                    if (selectedStatus === 'DATANG' || selectedStatus === 'PENDING') {
+                        localCacheData[index].timeStatus = jamTampil;
+                    } else {
+                        localCacheData[index].timeStatus = ""; // Bersihkan jika balik ke Belum/Batal
+                    }
+                    // Trigger aktif jika status diubah ke PENDING atau DATANG
+                    if (selectedStatus === 'PENDING' || selectedStatus === 'DATANG') {
+                        pemicuNotifStatus = true;
+                    }
+                }
+                localCacheData[index].status = selectedStatus;
+                
+                // B. Alokasi Karton & Waktu Muat Gudang
+                if (userLevel === 'ADMIN' || userLevel === 'SUPERUSER' || userDivisi === 'ADMIN' || userDivisi === 'SUPERUSER') {
+                    if (valWh1 !== dataTarget.wh1) {
+                        localCacheData[index].wh1 = valWh1;
+                        localCacheData[index].timeWh1 = jamTampil;
+                        if (valWh1 > 0) pemicuNotifWh1 = true;
+                    }
+                    if (valWh2 !== dataTarget.wh2) {
+                        localCacheData[index].wh2 = valWh2;
+                        localCacheData[index].timeWh2 = jamTampil;
+                        if (valWh2 > 0) pemicuNotifWh2 = true;
+                    }
+                } 
+                else if (userDivisi === 'WH-1' || userLevel === 'WH-1') {
+                    if (valWh1 !== dataTarget.wh1) {
+                        localCacheData[index].wh1 = valWh1;
+                        localCacheData[index].timeWh1 = jamTampil;
+                        if (valWh1 > 0) pemicuNotifWh1 = true;
+                    }
+                } 
+                else if (userDivisi === 'WH-2' || userLevel === 'WH-2') {
+                    if (valWh2 !== dataTarget.wh2) {
+                        localCacheData[index].wh2 = valWh2;
+                        localCacheData[index].timeWh2 = jamTampil;
+                        if (valWh2 > 0) pemicuNotifWh2 = true;
+                    }
+                }
+
+                // Simpan hasil update ke LocalStorage perangkat
+                localStorage.setItem('database_jadwal', JSON.stringify(localCacheData));
+
+                // --- TRIGGER REAL-TIME PUSH NOTIFICATION (v0.1.8) ---
+                const namaDriver = dataTarget.driver || dataTarget.Driver || "Driver";
+                const namaEkspedisi = dataTarget.ekspedisi || dataTarget.Ekspedisi || "-";
+                
+                if (typeof kirimNotifikasiSistem === 'function') {
+                    if (pemicuNotifStatus) {
+                        kirimNotifikasiSistem(
+                            `🚚 STATUS ARMADA: ${selectedStatus}`, 
+                            `${namaDriver} (${namaEkspedisi}) diperbarui ke status ${selectedStatus} pada pukul ${jamTampil}.`
+                        );
+                    }
+                    if (pemicuNotifWh1) {
+                        kirimNotifikasiSistem(
+                            `📦 WH-1 SELESAI MUAT`, 
+                            `${namaDriver} telah selesai dimuat di Gudang WH-1 sebanyak ${valWh1} Karton.`
+                        );
+                    }
+                    if (pemicuNotifWh2) {
+                        kirimNotifikasiSistem(
+                            `📦 WH-2 SELESAI MUAT`, 
+                            `${namaDriver} telah selesai dimuat di Gudang WH-2 sebanyak ${valWh2} Karton.`
+                        );
+                    }
+                }
+
+                // Feedback Instan Antarmuka
+                tutupModal();
+                if (typeof pilihJadwal === 'function') {
+                    pilihJadwal(konversiTgl(tglMentah)); 
+                }
+                if (typeof getarTombol === 'function') getarTombol();
+
+                // --- TAHAP 2: UPDATE DIRECT KE FIREBASE REALTIME ---
+                try {
+                    const pathDriverFirebase = `master_jadwal/${stringHariFirebase}/list/${indeksListFirebase}`;
+                    
+                    // Masukkan seluruh data mutakhir termasuk field timestamp baru ke payload
+                    let updatePayload = {
+                        status: localCacheData[index].status,
+                        wh1: localCacheData[index].wh1 || 0,
+                        wh2: localCacheData[index].wh2 || 0,
+                        timeStatus: localCacheData[index].timeStatus || "",
+                        timeWh1: localCacheData[index].timeWh1 || "",
+                        timeWh2: localCacheData[index].timeWh2 || ""
+                    };
+
+                    if (typeof db !== 'undefined' && db.ref) {
+                        await db.ref(pathDriverFirebase).update(updatePayload);
+                    } else if (typeof firebase !== 'undefined' && firebase.database) {
+                        await firebase.database().ref(pathDriverFirebase).update(updatePayload);
+                    }
+                    
+                    console.log("Firebase sukses diperbarui pada jalur: " + pathDriverFirebase);
+
+                } catch (fbError) {
+                    console.error("Gagal memperbarui data ke Firebase: ", fbError);
+                }
+
+                // --- TAHAP 3: TERUSKAN KE ANTREAN SINKRONISASI SPREADSHEET ---
+                const stringEkspedisi = (dataTarget.ekspedisi || dataTarget.Ekspedisi || "").toString();
+                const stringNopol = (dataTarget.nopol || dataTarget.Nopol || "").toString();
+                const stringKota = (dataTarget.kota || dataTarget.Kota || "").toString();
+                const stringDriver = (dataTarget.driver || dataTarget.Driver || "").toString();
+                
+                const kunciUnikRute = (stringEkspedisi + stringNopol + stringKota + stringDriver).toLowerCase().replace(/\s/g, '');
+
+                if (typeof tambahKeAntreanSync === 'function') {
+                    tambahKeAntreanSync(
+                        id, 
+                        localCacheData[index].status, 
+                        localCacheData[index].wh1, 
+                        localCacheData[index].wh2, 
+                        kunciUnikRute
+                    );
+                }
+
             } else {
-                localCacheData[index].timeStatus = ""; // Bersihkan jika balik ke Belum/Batal
-            }
-            // Trigger aktif jika status diubah ke PENDING atau DATANG
-            if (selectedStatus === 'PENDING' || selectedStatus === 'DATANG') {
-                pemicuNotifStatus = true;
+                alert("Data tidak ditemukan di database lokal!");
             }
         }
-        localCacheData[index].status = selectedStatus;
-        
-        // B. Alokasi Karton & Waktu Muat Gudang
-        if (userLevel === 'ADMIN' || userLevel === 'SUPERUSER' || userDivisi === 'ADMIN' || userDivisi === 'SUPERUSER') {
-            if (valWh1 !== dataTarget.wh1) {
-                localCacheData[index].wh1 = valWh1;
-                localCacheData[index].timeWh1 = jamTampil;
-                if (valWh1 > 0) pemicuNotifWh1 = true;
-            }
-            if (valWh2 !== dataTarget.wh2) {
-                localCacheData[index].wh2 = valWh2;
-                localCacheData[index].timeWh2 = jamTampil;
-                if (valWh2 > 0) pemicuNotifWh2 = true;
-            }
-        } 
-        else if (userDivisi === 'WH-1' || userLevel === 'WH-1') {
-            if (valWh1 !== dataTarget.wh1) {
-                localCacheData[index].wh1 = valWh1;
-                localCacheData[index].timeWh1 = jamTampil;
-                if (valWh1 > 0) pemicuNotifWh1 = true;
-            }
-        } 
-        else if (userDivisi === 'WH-2' || userLevel === 'WH-2') {
-            if (valWh2 !== dataTarget.wh2) {
-                localCacheData[index].wh2 = valWh2;
-                localCacheData[index].timeWh2 = jamTampil;
-                if (valWh2 > 0) pemicuNotifWh2 = true;
-            }
-        }
-
-        // Simpan hasil update ke LocalStorage perangkat
-        localStorage.setItem('database_jadwal', JSON.stringify(localCacheData));
-
-        // --- TRIGGER REAL-TIME PUSH NOTIFICATION (v0.1.8) ---
-        const namaDriver = dataTarget.driver || dataTarget.Driver || "Driver";
-        const namaEkspedisi = dataTarget.ekspedisi || dataTarget.Ekspedisi || "-";
-        
-        if (typeof kirimNotifikasiSistem === 'function') {
-            if (pemicuNotifStatus) {
-                kirimNotifikasiSistem(
-                    `🚚 STATUS ARMADA: ${selectedStatus}`, 
-                    `${namaDriver} (${namaEkspedisi}) diperbarui ke status ${selectedStatus} pada pukul ${jamTampil}.`
-                );
-            }
-            if (pemicuNotifWh1) {
-                kirimNotifikasiSistem(
-                    `📦 WH-1 SELESAI MUAT`, 
-                    `${namaDriver} telah selesai dimuat di Gudang WH-1 sebanyak ${valWh1} Karton.`
-                );
-            }
-            if (pemicuNotifWh2) {
-                kirimNotifikasiSistem(
-                    `📦 WH-2 SELESAI MUAT`, 
-                    `${namaDriver} telah selesai dimuat di Gudang WH-2 sebanyak ${valWh2} Karton.`
-                );
-            }
-        }
-
-        // Feedback Instan Antarmuka
-        tutupModal();
-        if (typeof pilihJadwal === 'function') {
-            pilihJadwal(konversiTgl(tglMentah)); 
-        }
-        if (typeof getarTombol === 'function') getarTombol();
-
-        // --- TAHAP 2: UPDATE DIRECT KE FIREBASE REALTIME ---
-        try {
-            const pathDriverFirebase = `master_jadwal/${stringHariFirebase}/list/${indeksListFirebase}`;
-            
-            // Masukkan seluruh data mutakhir termasuk field timestamp baru ke payload
-            let updatePayload = {
-                status: localCacheData[index].status,
-                wh1: localCacheData[index].wh1 || 0,
-                wh2: localCacheData[index].wh2 || 0,
-                timeStatus: localCacheData[index].timeStatus || "",
-                timeWh1: localCacheData[index].timeWh1 || "",
-                timeWh2: localCacheData[index].timeWh2 || ""
-            };
-
-            if (typeof db !== 'undefined' && db.ref) {
-                await db.ref(pathDriverFirebase).update(updatePayload);
-            } else if (typeof firebase !== 'undefined' && firebase.database) {
-                await firebase.database().ref(pathDriverFirebase).update(updatePayload);
-            }
-            
-            console.log("Firebase sukses diperbarui pada jalur: " + pathDriverFirebase);
-
-        } catch (fbError) {
-            console.error("Gagal memperbarui data ke Firebase: ", fbError);
-        }
-
-        // --- TAHAP 3: TERUSKAN KE ANTREAN SINKRONISASI SPREADSHEET ---
-        const stringEkspedisi = (dataTarget.ekspedisi || dataTarget.Ekspedisi || "").toString();
-        const stringNopol = (dataTarget.nopol || dataTarget.Nopol || "").toString();
-        const stringKota = (dataTarget.kota || dataTarget.Kota || "").toString();
-        const stringDriver = (dataTarget.driver || dataTarget.Driver || "").toString();
-        
-        const kunciUnikRute = (stringEkspedisi + stringNopol + stringKota + stringDriver).toLowerCase().replace(/\s/g, '');
-
-        if (typeof tambahKeAntreanSync === 'function') {
-            tambahKeAntreanSync(
-                id, 
-                localCacheData[index].status, 
-                localCacheData[index].wh1, 
-                localCacheData[index].wh2, 
-                kunciUnikRute
-            );
-        }
-
-    } else {
-        alert("Data tidak ditemukan di database lokal!");
-    }
-}
 
         /**
          * 12. REVISI: FUNGSI TUTUP PANEL MODAL UPDATE (SAFE STATE RESET)
