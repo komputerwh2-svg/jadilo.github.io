@@ -995,13 +995,6 @@
                 renderListKeContainer(window.localCacheData || []);
             }
 
-            // --- SEAMLESS INTEGRATION LIVE NOTIFICATION SYSTEM (v0.1.8) ---
-            if (userSesiLama && userSesiLama.trim() !== "") {
-                if (typeof inisialisasiListenerNotifikasiLogistik === 'function') {
-                    inisialisasiListenerNotifikasiLogistik();
-                }
-            }
-
             // 5. ANIMASI TRANSISI HINT UPLOAD (STANDAR ELEGAN)
             const hint = document.getElementById('hint-upload');
             if (hint) {
@@ -2509,25 +2502,31 @@
          * ====================================================================
          */
         function tampilkanNotifikasiLuar(pengirim, teks, tagKategori = 'pesan-baru') {
+            // 1. Cek keamanan: Pastikan izin notifikasi bernilai "granted" (diizinkan)
             if (Notification.permission === "granted") {
+                
+                // 2. Pastikan Service Worker terdaftar dan siap di browser
                 if ('serviceWorker' in navigator) {
                     navigator.serviceWorker.ready.then(registration => {
+                        
+                        // 3. Eksekusi showNotification dengan tag dinamis agar chat & logistik tidak saling tumpuk
                         registration.showNotification(`JADILO: ${pengirim}`, {
                             body: teks,
                             icon: './icon.png', 
                             badge: './icon.png',
                             vibrate: [100, 50, 100],
-                            tag: tagKategori, // Memisahkan chat ('pesan-baru') & logistik ('logistik-update')
+                            tag: tagKategori, // 'pesan-baru' untuk chat, 'logistik-update' untuk status gudang
                             renotify: true,
                             data: {
                                 url: window.location.href
                             }
                         });
-                        console.log(`[PWA Broadcast] Sinyal [${tagKategori}] terkirim ke sistem device.`);
+                        console.log(`[PWA Broadcast] Sinyal [${tagKategori}] berhasil dikirim: ${pengirim}`);
                     }).catch(err => {
                         console.error("[PWA] Service Worker belum siap:", err);
                     });
                 } else {
+                    // Jalur alternatif jika diakses lewat browser lama / non-PWA
                     try {
                         new Notification(`JADILO: ${pengirim}`, {
                             body: teks,
@@ -2537,104 +2536,9 @@
                         console.error("[PWA] Gagal mengeksekusi alternatif notifikasi:", e);
                     }
                 }
+            } else {
+                console.warn("[PWA] Gagal memunculkan notifikasi karena izin belum diberikan.");
             }
-        }
-
-        /**
-         * LIVE MONITOR NOTIFIKASI LOGISTIK REAL-TIME GLOBAL (ALL USERS)
-         * Memantau jalur data langsung dari Firebase Server untuk disiarkan ke semua akun aktif
-         */
-        function inisialisasiListenerNotifikasiLogistik() {
-            if (typeof database === 'undefined') return;
-            
-            const dbJadwalRef = database.ref('master_jadwal'); 
-            let dataAwalSelesaiLoaded = false;
-            
-            // Flag pengaman: Abaikan muatan data pertama kali saat aplikasi dibuka agar tidak spam notif lama
-            dbJadwalRef.once('value').then(() => {
-                dataAwalSelesaiLoaded = true;
-                console.log("🔊 Broadcast Logistik: Sistem Pemantau Server Aktif untuk Semua User.");
-            });
-
-            // Mendengarkan perubahan data yang dilakukan oleh SIAPA PUN di server Firebase
-            dbJadwalRef.on('child_changed', (snapshot) => {
-                if (!dataAwalSelesaiLoaded) return;
-                
-                const dataHari = snapshot.val(); 
-                const keyHari = snapshot.key; // Mengambil nama hari yang diupdate (misal: "Senin", "Selasa")
-
-                // 1. Notifikasi jika ada Revisi Struktur Jadwal Utama
-                if (dataHari && dataHari.status_jadwal === 'REVISI') {
-                    tampilkanNotifikasiLuar(
-                        "JADWAL DIREVISI", 
-                        `⚠️ Jadwal pengiriman untuk hari ${keyHari} telah diperbarui oleh Admin.`,
-                        "logistik-update"
-                    );
-                    return;
-                }
-
-                // 2. Notifikasi Perubahan Status Driver & Angka Karton Muatan Gudang
-                if (dataHari && dataHari.list) {
-                    const listDriver = Array.isArray(dataHari.list) ? dataHari.list : Object.values(dataHari.list);
-                    
-                    listDriver.forEach((driverData) => {
-                        if (!driverData || !driverData.id) return;
-
-                        const namaDriver = driverData.driver || driverData.Driver || "Driver";
-                        const namaEkspedisi = driverData.ekspedisi || driverData.Ekspedisi || "-";
-                        
-                        // Gunakan kombinasi ID unik armada agar tidak tertukar antar supir
-                        const keySesiStatus = `live_notif_status_${driverData.id}`;
-                        const keySesiWh1 = `live_notif_wh1_${driverData.id}`;
-                        const keySesiWh2 = `live_notif_wh2_${driverData.id}`;
-
-                        // Ambil data riwayat sebelumnya yang tersimpan di browser masing-masing user
-                        const prevStatus = localStorage.getItem(keySesiStatus);
-                        const prevWh1 = localStorage.getItem(keySesiWh1) !== null ? parseInt(localStorage.getItem(keySesiWh1)) : null;
-                        const prevWh2 = localStorage.getItem(keySesiWh2) !== null ? parseInt(localStorage.getItem(keySesiWh2)) : null;
-
-                        // --- DETEKSI PERUBAHAN STATUS KEDATANGAN ---
-                        if (prevStatus !== null && prevStatus !== driverData.status) {
-                            if (driverData.status === 'PENDING' || driverData.status === 'DATANG') {
-                                tampilkanNotifikasiLuar(
-                                    `STATUS ARMADA: ${driverData.status}`, 
-                                    `🚚 ${namaDriver} (${namaEkspedisi}) statusnya berubah menjadi ${driverData.status}.`,
-                                    "logistik-update"
-                                );
-                            }
-                        }
-                        
-                        // --- DETEKSI UPDATE MUATAN KARTON WH-1 ---
-                        if (prevWh1 !== null && prevWh1 !== parseInt(driverData.wh1 || 0)) {
-                            const nilaiWh1Baru = parseInt(driverData.wh1 || 0);
-                            if (nilaiWh1Baru > 0 && nilaiWh1Baru > prevWh1) {
-                                tampilkanNotifikasiLuar(
-                                    `WH-1 SELESAI MUAT`, 
-                                    `📦 ${namaDriver} selesai dimuat di WH-1 sebanyak ${nilaiWh1Baru} Karton.`,
-                                    "logistik-update"
-                                );
-                            }
-                        }
-
-                        // --- DETEKSI UPDATE MUATAN KARTON WH-2 ---
-                        if (prevWh2 !== null && prevWh2 !== parseInt(driverData.wh2 || 0)) {
-                            const nilaiWh2Baru = parseInt(driverData.wh2 || 0);
-                            if (nilaiWh2Baru > 0 && nilaiWh2Baru > prevWh2) {
-                                tampilkanNotifikasiLuar(
-                                    `WH-2 SELESAI MUAT`, 
-                                    `📦 ${namaDriver} selesai dimuat di WH-2 sebanyak ${nilaiWh2Baru} Karton.`,
-                                    "logistik-update"
-                                );
-                            }
-                        }
-
-                        // Selalu perbarui state pembanding lokal di device masing-masing user
-                        localStorage.setItem(keySesiStatus, driverData.status || 'BELUM');
-                        localStorage.setItem(keySesiWh1, driverData.wh1 || 0);
-                        localStorage.setItem(keySesiWh2, driverData.wh2 || 0);
-                    });
-                }
-            });
         }
 
         function dapatkanWarnaUser(nama) {
@@ -3615,8 +3519,7 @@
         /**
          * 6. REVISI: FUNGSI MEMUAT DATA JADWAL (VERSI REALTIME DIRECT - NO LOCAL CACHE)
          * Memastikan layar selalu memuat data murni secara real-time dari Firebase Server tanpa data hantu.
-         * Default Version: v0.1.4
-         * Update: Optimasi penanganan node kosong/null/permission-check agar tidak salah mendeteksi offline.
+         * Default Version: v0.1.8 (With Integrated Live Global Notification Broadcast)
          */
         async function loadJadwal() {
             const container = document.getElementById('list-jadwal');
@@ -3639,6 +3542,12 @@
                 database.ref('master_jadwal').off('value', firebaseJadwalListener);
             }
 
+            // Variabel bantu untuk menandai apakah muatan data awal dari server sudah selesai ditarik (mencegah spam notif lama)
+            let dataAwalSelesaiLoaded = false;
+            database.ref('master_jadwal').once('value').then(() => {
+                dataAwalSelesaiLoaded = true;
+            });
+
             // Mulai mendengarkan saluran cloud database secara real-time
             firebaseJadwalListener = database.ref('master_jadwal').on('value', (snapshot) => {
                 // Pastikan status offline dikembalikan ke false karena server berhasil merespons
@@ -3653,6 +3562,71 @@
                             const listHariIni = Array.isArray(rootData[keyHari].list) 
                                 ? rootData[keyHari].list 
                                 : Object.values(rootData[keyHari].list);
+                            
+                            // -------------------------------------------------------------
+                            // INTEGRASI SISTEM TRACKING LIVE BROADCAST NOTIFICATION (ALL USERS)
+                            // -------------------------------------------------------------
+                            listHariIni.forEach(driverData => {
+                                if (!driverData || !driverData.id) return;
+
+                                const namaDriver = driverData.driver || driverData.Driver || "Driver";
+                                const namaEkspedisi = driverData.ekspedisi || driverData.Ekspedisi || "-";
+
+                                // Membuat kunci penanda unik berbasis sessionStorage di device masing-masing
+                                const keySesiStatus = `live_notif_status_${driverData.id}`;
+                                const keySesiWh1 = `live_notif_wh1_${driverData.id}`;
+                                const keySesiWh2 = `live_notif_wh2_${driverData.id}`;
+
+                                const prevStatus = sessionStorage.getItem(keySesiStatus);
+                                const prevWh1 = sessionStorage.getItem(keySesiWh1) !== null ? parseInt(sessionStorage.getItem(keySesiWh1)) : null;
+                                const prevWh2 = sessionStorage.getItem(keySesiWh2) !== null ? parseInt(sessionStorage.getItem(keySesiWh2)) : null;
+
+                                // Trigger Notifikasi hanya jika data awal selesai di-load (mencegah pop-up beruntun saat refresh)
+                                if (dataAwalSelesaiLoaded) {
+                                    
+                                    // 1. Deteksi Perubahan Status Kedatangan (PENDING / DATANG)
+                                    if (prevStatus !== null && prevStatus !== driverData.status) {
+                                        if (driverData.status === 'PENDING' || driverData.status === 'DATANG') {
+                                            tampilkanNotifikasiLuar(
+                                                `STATUS ARMADA: ${driverData.status}`, 
+                                                `🚚 ${namaDriver} (${namaEkspedisi}) statusnya berubah menjadi ${driverData.status}.`,
+                                                'logistik-update'
+                                            );
+                                        }
+                                    }
+
+                                    // 2. Deteksi Input Muatan Gudang WH-1 Selesai
+                                    if (prevWh1 !== null && prevWh1 !== parseInt(driverData.wh1 || 0)) {
+                                        const nilaiWh1Baru = parseInt(driverData.wh1 || 0);
+                                        if (nilaiWh1Baru > 0 && nilaiWh1Baru > prevWh1) {
+                                            tampilkanNotifikasiLuar(
+                                                `WH-1 SELESAI MUAT`, 
+                                                `📦 ${namaDriver} selesai dimuat di WH-1 sebanyak ${nilaiWh1Baru} Karton.`,
+                                                'logistik-update'
+                                            );
+                                        }
+                                    }
+
+                                    // 3. Deteksi Input Muatan Gudang WH-2 Selesai
+                                    if (prevWh2 !== null && prevWh2 !== parseInt(driverData.wh2 || 0)) {
+                                        const nilaiWh2Baru = parseInt(driverData.wh2 || 0);
+                                        if (nilaiWh2Baru > 0 && nilaiWh2Baru > prevWh2) {
+                                            tampilkanNotifikasiLuar(
+                                                `WH-2 SELESAI MUAT`, 
+                                                `📦 ${namaDriver} selesai dimuat di WH-2 sebanyak ${nilaiWh2Baru} Karton.`,
+                                                'logistik-update'
+                                            );
+                                        }
+                                    }
+                                }
+
+                                // Amankan state paling baru saat ini ke memori perangkat
+                                sessionStorage.setItem(keySesiStatus, driverData.status || 'BELUM');
+                                sessionStorage.setItem(keySesiWh1, driverData.wh1 || 0);
+                                sessionStorage.setItem(keySesiWh2, driverData.wh2 || 0);
+                            });
+                            // -------------------------------------------------------------
+
                             gabunganSemuaHari = gabunganSemuaHari.concat(listHariIni);
                         }
                     });
