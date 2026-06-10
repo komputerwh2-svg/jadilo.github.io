@@ -2510,7 +2510,7 @@
                     navigator.serviceWorker.ready.then(registration => {
                         
                         // 3. Eksekusi showNotification dengan tag dinamis agar chat & logistik tidak saling tumpuk
-                        registration.showNotification(`[JDL INFO] ${pengirim}`, {
+                        registration.showNotification(`[JDL] ${pengirim}`, {
                             body: teks,
                             icon: './icon.png',
                             vibrate: [100, 50, 100],
@@ -2527,7 +2527,7 @@
                 } else {
                     // Jalur alternatif jika diakses lewat browser lama / non-PWA
                     try {
-                        new Notification(`[JDL INFO] ${pengirim}`, {
+                        new Notification(`[JDL] ${pengirim}`, {
                             body: teks,
                             icon: './icon.png'
                         });
@@ -3597,7 +3597,7 @@
 
                                             tampilkanNotifikasiLuar(
                                                 `STATUS ARMADA: ${driverData.status} jam ${jamUpdate}`, 
-                                                `🚚 (${namaEkspedisi}) ${namaDriver} (${namaPlat}) tujuan ${namaTujuan}`,
+                                                `🚚 (${namaEkspedisi}) ${namaDriver} - ${namaPlat} tujuan ${namaTujuan}`,
                                                 'logistik-update'
                                             );
                                         }
@@ -3614,7 +3614,7 @@
 
                                             tampilkanNotifikasiLuar(
                                                 `WH-1 SELESAI MUAT jam ${jamUpdate}`, 
-                                                `📦 (${namaEkspedisi}) ${namaDriver} tujuan ${namaTujuan} selesai muat di WH-1 total ${nilaiWh1Baru} Karton`,
+                                                `📦 (${namaEkspedisi}) ${namaDriver} tujuan ${namaTujuan} total muat ${nilaiWh1Baru} Karton`,
                                                 'logistik-update'
                                             );
                                         }
@@ -3631,7 +3631,7 @@
 
                                             tampilkanNotifikasiLuar(
                                                 `WH-2 SELESAI MUAT jam ${jamUpdate}`, 
-                                                `📦 (${namaEkspedisi}) ${namaDriver} tujuan ${namaTujuan} selesai muat di WH-2 total ${nilaiWh2Baru} Karton`,
+                                                `📦 (${namaEkspedisi}) ${namaDriver} tujuan ${namaTujuan} total muat ${nilaiWh2Baru} Karton`,
                                                 'logistik-update'
                                             );
                                         }
