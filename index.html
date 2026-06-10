@@ -2510,15 +2510,14 @@
                     navigator.serviceWorker.ready.then(registration => {
                         
                         // 3. Eksekusi showNotification dengan tag dinamis agar chat & logistik tidak saling tumpuk
-                        registration.showNotification(`[JDL] ${pengirim}`, {
+                        registration.showNotification(`[JDL INFO] ${pengirim}`, {
                             body: teks,
-                            icon: './icon.png', 
-                            badge: './icon.png',
+                            icon: './icon.png',
                             vibrate: [100, 50, 100],
                             tag: tagKategori, // 'pesan-baru' untuk chat, 'logistik-update' untuk status gudang
                             renotify: true,
                             data: {
-                                url: window.location.href
+                                url: window.location.href // Tetap simpan di background untuk penanganan klik PWA
                             }
                         });
                         console.log(`[PWA Broadcast] Sinyal [${tagKategori}] berhasil dikirim: ${pengirim}`);
@@ -2528,7 +2527,7 @@
                 } else {
                     // Jalur alternatif jika diakses lewat browser lama / non-PWA
                     try {
-                        new Notification(`[JDL] ${pengirim}`, {
+                        new Notification(`[JDL INFO] ${pengirim}`, {
                             body: teks,
                             icon: './icon.png'
                         });
@@ -3574,6 +3573,7 @@
                                 const namaEkspedisi = driverData.ekspedisi || driverData.Ekspedisi || "-";
                                 // KOREKSI: Menggunakan field 'kota' dari database Firebase
                                 const namaTujuan = driverData.kota || driverData.Kota || "-";
+                                const namaPlat = driverData.nopol || driverData.Nopol || "-";
 
                                 // Membuat kunci penanda unik berbasis sessionStorage di device masing-masing
                                 const keySesiStatus = `live_notif_status_${driverData.id}`;
@@ -3596,8 +3596,8 @@
                                             const jamUpdate = String(skrg.getHours()).padStart(2, '0') + ':' + String(skrg.getMinutes()).padStart(2, '0');
 
                                             tampilkanNotifikasiLuar(
-                                                `STATUS ARMADA: ${driverData.status}`, 
-                                                `🚚 (${namaEkspedisi}) ${namaDriver} tujuan ${namaTujuan} status ${driverData.status} jam ${jamUpdate}`,
+                                                `STATUS ARMADA: ${driverData.status} jam ${jamUpdate}`, 
+                                                `🚚 (${namaEkspedisi}) ${namaDriver} (${namaPlat}) tujuan ${namaTujuan}`,
                                                 'logistik-update'
                                             );
                                         }
@@ -3613,8 +3613,8 @@
                                             const jamUpdate = String(skrg.getHours()).padStart(2, '0') + ':' + String(skrg.getMinutes()).padStart(2, '0');
 
                                             tampilkanNotifikasiLuar(
-                                                `WH-1 SELESAI MUAT`, 
-                                                `📦 (${namaEkspedisi}) ${namaDriver} tujuan${namaTujuan} selesai dimuat di WH-1 sebanyak ${nilaiWh1Baru} Karton jam ${jamUpdate}`,
+                                                `WH-1 SELESAI MUAT jam ${jamUpdate}`, 
+                                                `📦 (${namaEkspedisi}) ${namaDriver} tujuan ${namaTujuan} selesai muat di WH-1 total ${nilaiWh1Baru} Karton`,
                                                 'logistik-update'
                                             );
                                         }
@@ -3630,8 +3630,8 @@
                                             const jamUpdate = String(skrg.getHours()).padStart(2, '0') + ':' + String(skrg.getMinutes()).padStart(2, '0');
 
                                             tampilkanNotifikasiLuar(
-                                                `WH-2 SELESAI MUAT`, 
-                                                `📦 (${namaEkspedisi}) ${namaDriver} tujuan ${namaTujuan} selesai dimuat di WH-2 sebanyak ${nilaiWh2Baru} Karton jam ${jamUpdate}`,
+                                                `WH-2 SELESAI MUAT jam ${jamUpdate}`, 
+                                                `📦 (${namaEkspedisi}) ${namaDriver} tujuan ${namaTujuan} selesai muat di WH-2 total ${nilaiWh2Baru} Karton`,
                                                 'logistik-update'
                                             );
                                         }
