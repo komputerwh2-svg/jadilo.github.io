@@ -2546,8 +2546,8 @@
         }
 
         /**
-        * Inisialisasi Listener Firebase untuk Pemantauan Logistik Real-Time Global
-        */
+         * Inisialisasi Listener Firebase untuk Pemantauan Logistik Real-Time Global (v0.1.8 - SNAPSHOT FIXED)
+         */
         function inisialisasiListenerNotifikasiLogistik() {
             const dbJadwalRef = firebase.database().ref('master_jadwal'); 
             
@@ -2573,7 +2573,7 @@
             });
 
             // B. DETEKSI REVISI JADWAL, STATUS DATANG/PENDING, & INPUT MUATAN GUDANG
-            dbJadwalRef.on('child_changed', (snapshot) => {
+            dbJadwalRef.on('child_changed', (snapshot, prevChildKey) => {
                 if (!dataAwalSelesaiLoaded) return;
 
                 const dataHari = snapshot.val(); 
@@ -2590,43 +2590,59 @@
 
                 // Cek perubahan data spesifik driver di dalam array 'list'
                 if (dataHari && dataHari.list && Array.isArray(dataHari.list)) {
-                    dataHari.list.forEach((driverData) => {
+                    
+                    // Ambil user aktif saat ini untuk mencegah alert memantul ke diri sendiri
+                    const currentUser = (localStorage.getItem('activeUser') || '').toUpperCase().trim();
+
+                    dataHari.list.forEach((driverData, idx) => {
                         if (!driverData || !driverData.id) return;
 
-                        // Bandingkan dengan Cache Lokal di komputer masing-masing operator/user
-                        const cacheLokal = window.localCacheData ? window.localCacheData.find(item => item.id == driverData.id) : null;
-                        
-                        if (cacheLokal) {
-                            const namaDriver = driverData.driver || driverData.Driver || "Driver";
-                            const namaEkspedisi = driverData.ekspedisi || driverData.Ekspedisi || "-";
+                        const namaDriver = driverData.driver || driverData.Driver || "Driver";
+                        const namaEkspedisi = driverData.ekspedisi || driverData.Ekspedisi || "-";
 
-                            // 1. Cek Perubahan Status Kedatangan (PENDING / DATANG)
-                            if (cacheLokal.status !== driverData.status && (driverData.status === 'PENDING' || driverData.status === 'DATANG')) {
+                        // --- STRATEGI JEMBATAN AMAN TANPA BENTROK CACHE ---
+                        // Kita gunakan sessionStorage sementara khusus penanda status agar tidak balapan dengan localCacheData utama
+                        const keySesiStatus = `prev_status_${driverData.id}`;
+                        const keySesiWh1 = `prev_wh1_${driverData.id}`;
+                        const keySesiWh2 = `prev_wh2_${driverData.id}`;
+
+                        const prevStatus = sessionStorage.getItem(keySesiStatus);
+                        const prevWh1 = parseInt(sessionStorage.getItem(keySesiWh1));
+                        const prevWh2 = parseInt(sessionStorage.getItem(keySesiWh2));
+
+                        // 1. Cek Perubahan Status Kedatangan (PENDING / DATANG)
+                        if (prevStatus !== null && prevStatus !== driverData.status) {
+                            if (driverData.status === 'PENDING' || driverData.status === 'DATANG') {
                                 tampilkanNotifikasiLuar(
                                     `STATUS ARMADA: ${driverData.status}`, 
                                     `🚚 ${namaDriver} (${namaEkspedisi}) dinyatakan ${driverData.status}.`,
                                     "logistik-update"
                                 );
                             }
-                            
-                            // 2. Cek Pengisian Selesai Muat WH-1
-                            if (cacheLokal.wh1 !== driverData.wh1 && driverData.wh1 > 0) {
-                                tampilkanNotifikasiLuar(
-                                    `WH-1 SELESAI MUAT`, 
-                                    `📦 ${namaDriver} selesai dimuat di WH-1 sebanyak ${driverData.wh1} Karton.`,
-                                    "logistik-update"
-                                );
-                            }
-
-                            // 3. Cek Pengisian Selesai Muat WH-2
-                            if (cacheLokal.wh2 !== driverData.wh2 && driverData.wh2 > 0) {
-                                tampilkanNotifikasiLuar(
-                                    `WH-2 SELESAI MUAT`, 
-                                    `📦 ${namaDriver} selesai dimuat di WH-2 sebanyak ${driverData.wh2} Karton.`,
-                                    "logistik-update"
-                                );
-                            }
                         }
+                        
+                        // 2. Cek Pengisian Selesai Muat WH-1
+                        if (!isNaN(prevWh1) && prevWh1 !== driverData.wh1 && driverData.wh1 > 0) {
+                            tampilkanNotifikasiLuar(
+                                `WH-1 SELESAI MUAT`, 
+                                `📦 ${namaDriver} selesai dimuat di WH-1 sebanyak ${driverData.wh1} Karton.`,
+                                "logistik-update"
+                            );
+                        }
+
+                        // 3. Cek Pengisian Selesai Muat WH-2
+                        if (!isNaN(prevWh2) && prevWh2 !== driverData.wh2 && driverData.wh2 > 0) {
+                            tampilkanNotifikasiLuar(
+                                `WH-2 SELESAI MUAT`, 
+                                `📦 ${namaDriver} selesai dimuat di WH-2 sebanyak ${driverData.wh2} Karton.`,
+                                "logistik-update"
+                            );
+                        }
+
+                        // Selalu perbarui memory map sessionStorage untuk perbandingan perubahan berikutnya
+                        sessionStorage.setItem(keySesiStatus, driverData.status || 'BELUM');
+                        sessionStorage.setItem(keySesiWh1, driverData.wh1 || 0);
+                        sessionStorage.setItem(keySesiWh2, driverData.wh2 || 0);
                     });
                 }
             });
