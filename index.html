@@ -2510,7 +2510,7 @@
                     navigator.serviceWorker.ready.then(registration => {
                         
                         // 3. Eksekusi showNotification dengan tag dinamis agar chat & logistik tidak saling tumpuk
-                        registration.showNotification(`JADILO: ${pengirim}`, {
+                        registration.showNotification(`[JDL] ${pengirim}`, {
                             body: teks,
                             icon: './icon.png', 
                             badge: './icon.png',
@@ -2528,7 +2528,7 @@
                 } else {
                     // Jalur alternatif jika diakses lewat browser lama / non-PWA
                     try {
-                        new Notification(`JADILO: ${pengirim}`, {
+                        new Notification(`[JDL] ${pengirim}`, {
                             body: teks,
                             icon: './icon.png'
                         });
@@ -3520,6 +3520,7 @@
          * 6. REVISI: FUNGSI MEMUAT DATA JADWAL (VERSI REALTIME DIRECT - NO LOCAL CACHE)
          * Memastikan layar selalu memuat data murni secara real-time dari Firebase Server tanpa data hantu.
          * Default Version: v0.1.8 (With Integrated Live Global Notification Broadcast)
+         * Update: Revisi format pesan notifikasi WH-1 & WH-2 (Driver, Ekspedisi, Tujuan, Jumlah Muat, Jam)
          */
         async function loadJadwal() {
             const container = document.getElementById('list-jadwal');
@@ -3571,6 +3572,7 @@
 
                                 const namaDriver = driverData.driver || driverData.Driver || "Driver";
                                 const namaEkspedisi = driverData.ekspedisi || driverData.Ekspedisi || "-";
+                                const namaTujuan = driverData.tujuan || driverData.Tujuan || "-";
 
                                 // Membuat kunci penanda unik berbasis sessionStorage di device masing-masing
                                 const keySesiStatus = `live_notif_status_${driverData.id}`;
@@ -3587,33 +3589,48 @@
                                     // 1. Deteksi Perubahan Status Kedatangan (PENDING / DATANG)
                                     if (prevStatus !== null && prevStatus !== driverData.status) {
                                         if (driverData.status === 'PENDING' || driverData.status === 'DATANG') {
+                                            
+                                            // Mengambil waktu real-time saat notifikasi dipicu (Format HH:MM)
+                                            const skrg = new Date();
+                                            const jamUpdate = String(skrg.getHours()).padStart(2, '0') + ':' + String(skrg.getMinutes()).padStart(2, '0');
+
                                             tampilkanNotifikasiLuar(
                                                 `STATUS ARMADA: ${driverData.status}`, 
-                                                `🚚 ${namaDriver} (${namaEkspedisi}) statusnya berubah menjadi ${driverData.status}.`,
+                                                `🚚 ${namaDriver} (${namaEkspedisi}) tujuan ${namaTujuan} status ${driverData.status} jam ${jamUpdate}`,
                                                 'logistik-update'
                                             );
                                         }
                                     }
 
-                                    // 2. Deteksi Input Muatan Gudang WH-1 Selesai
+                                    // 2. REVISI: Deteksi Input Muatan Gudang WH-1 Selesai
                                     if (prevWh1 !== null && prevWh1 !== parseInt(driverData.wh1 || 0)) {
                                         const nilaiWh1Baru = parseInt(driverData.wh1 || 0);
                                         if (nilaiWh1Baru > 0 && nilaiWh1Baru > prevWh1) {
+                                            
+                                            // Mengambil waktu real-time saat notifikasi dipicu (Format HH:MM)
+                                            const skrg = new Date();
+                                            const jamUpdate = String(skrg.getHours()).padStart(2, '0') + ':' + String(skrg.getMinutes()).padStart(2, '0');
+
                                             tampilkanNotifikasiLuar(
                                                 `WH-1 SELESAI MUAT`, 
-                                                `📦 ${namaDriver} selesai dimuat di WH-1 sebanyak ${nilaiWh1Baru} Karton.`,
+                                                `📦 ${namaDriver} (${namaEkspedisi}) ${namaTujuan} selesai dimuat di WH-1 sebanyak ${nilaiWh1Baru} Karton jam ${jamUpdate}`,
                                                 'logistik-update'
                                             );
                                         }
                                     }
 
-                                    // 3. Deteksi Input Muatan Gudang WH-2 Selesai
+                                    // 3. REVISI: Deteksi Input Muatan Gudang WH-2 Selesai
                                     if (prevWh2 !== null && prevWh2 !== parseInt(driverData.wh2 || 0)) {
                                         const nilaiWh2Baru = parseInt(driverData.wh2 || 0);
                                         if (nilaiWh2Baru > 0 && nilaiWh2Baru > prevWh2) {
+                                            
+                                            // Mengambil waktu real-time saat notifikasi dipicu (Format HH:MM)
+                                            const skrg = new Date();
+                                            const jamUpdate = String(skrg.getHours()).padStart(2, '0') + ':' + String(skrg.getMinutes()).padStart(2, '0');
+
                                             tampilkanNotifikasiLuar(
                                                 `WH-2 SELESAI MUAT`, 
-                                                `📦 ${namaDriver} selesai dimuat di WH-2 sebanyak ${nilaiWh2Baru} Karton.`,
+                                                `📦 ${namaDriver} (${namaEkspedisi}) ${namaTujuan} selesai dimuat di WH-2 sebanyak ${nilaiWh2Baru} Karton jam ${jamUpdate}`,
                                                 'logistik-update'
                                             );
                                         }
