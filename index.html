@@ -1086,7 +1086,7 @@
         async function kirimBroadcastPush(judulNotif, isiPesan, tagKategori = 'logistik-update') {
             try {
                 // Gunakan URL Web App Google Apps Script Anda yang sama dengan sistem login/update data
-                const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4VBanf6TX4pQfpOJ3HVQ1Ms4Dr2ML9jBmf7MghjgcDw9vugg1c1B31CunnuPo79Lz3w/exec";
+                const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwjBS7jPkGUBvENRtD53d3SJyppUe0cTfg8p4FtO25M9170pyjB7bMCNQ-53N5-PXATWQ/exec";
 
                 console.log('[FCM Web] Meneruskan instruksi broadcast ke server hub...');
 
@@ -1343,7 +1343,7 @@
 
         /**
          * ====================================================================
-         * PROSES LOGIN UTAMA APLIKASI + SINKRONISASI OTOMATIS MASTER_USERS (v0.1.5)
+         * PROSES LOGIN UTAMA APLIKASI + SINKRONISASI OTOMATIS MASTER_USERS (v3.6.1)
          * Menempatkan Logika Pembentukan Node Firebase Saat Autentikasi Spreadsheet Sukses
          * ====================================================================
          */
@@ -1373,7 +1373,7 @@
 
             // --- JALUR UTAMA (REST API KILAT): Akses Langsung Tembus Cloud ---
             try {
-                console.log(`Memulai Otentikasi Jalur Kilat REST API v0.1.4 untuk Akun: [${nodeUserAman}]...`);
+                console.log(`Memulai Otentikasi Jalur Kilat REST API v3.6.1 untuk Akun: [${nodeUserAman}]...`);
                 
                 // Set batas waktu tunggu (Timeout) 3.5 detik agar jika sinyal operator supir buruk, tidak hang
                 const controller = new AbortController();
@@ -1399,10 +1399,14 @@
                             localStorage.setItem('activeUser', usernameNormal);
                             localStorage.setItem('username', usernameNormal);
 
-                            // PENEGAKAN STATUS_LOGIN DI JALUR UTAMA FIREBASE
+                            // PENEGAKAN STATUS DI JALUR UTAMA FIREBASE (REVISI SINKRONISASI v3.6.1)
                             if (typeof database !== 'undefined') {
                                 await database.ref(`master_users/${nodeUserAman}`).update({
-                                    status_login: "Login"
+                                    status_user: "Aktif",
+                                    status_login: "Login",
+                                    status_aplikasi: "Online",
+                                    last_login: new Date().toLocaleString('id-ID'),
+                                    terakhir_dilihat: firebase.database.ServerValue.TIMESTAMP
                                 });
                             }
 
@@ -1455,7 +1459,9 @@
                         level: res.level,
                         divisi: res.divisi || 'ADMIN',
                         status_user: "Aktif",
-                        status_login: "Login", // Ditambahkan sebagai penanda status login awal
+                        status_login: "Login", 
+                        status_aplikasi: "Online",
+                        last_login: new Date().toLocaleString('id-ID'),
                         last_sync: new Date().toLocaleString('id-ID')
                     };
 
@@ -1491,12 +1497,18 @@
         }
 
         /**
-         * FUNGSI SUB-STRUKTUR: MENYELARASKAN STATE ALUR LAMA PASCA LOGIN
+         * FUNGSI SUB-STRUKTUR: MENYELARASKAN STATE ALUR LAMA PASCA LOGIN (v3.6.1)
          */
         function eksekusiPascaLogin(username, level) {
             // 2. Sinkronisasi kehadiran real-time ke Firebase (Online & Penanda Aktif)
             const userDivisi = localStorage.getItem('userDivisi') || '';
             aktifkanSistemKehadiran(username, level, userDivisi);
+
+            // [TAMBAHAN v3.6.1] Pemicu Sinkronisasi Token FCM Perangkat Pasca-Login
+            if (typeof mintaIzinNotifikasi === 'function') {
+                console.log("[FCM Client] Menginisialisasi token perangkat pasca login sukses...");
+                mintaIzinNotifikasi();
+            }
 
             // 3. Update komponen teks nama & ucapan salam
             if (typeof updateGreeting === 'function') updateGreeting();
@@ -1517,7 +1529,7 @@
 
         /**
          * LOGIKA REALTIME PRESENCE (DETEKSI USER AKTIF & STATUS ONLINE)
-         * SUDAH SINKRON DENGAN MASTER_USERS & AKURAT TOTAL
+         * SUDAH SINKRON DENGAN MASTER_USERS & AKURAT TOTAL (REVISI v3.6.1)
          */
         function aktifkanSistemKehadiran(username, level, divisi) {
             if (typeof database === 'undefined') return;
@@ -1525,7 +1537,7 @@
             // Bersihkan karakter aneh pada nama user agar aman dijadikan key Firebase
             const nodeUserAman = username.replace(/[\.\#\$\[\]]/g, '_');
             
-            // PERBAIKAN UTAMA: Alihkan jalur referensi ke node 'master_users'
+            // Jalur referensi ke node 'master_users'
             const referensiStatus = database.ref('master_users/' + nodeUserAman);
 
             database.ref('.info/connected').on('value', function(snapshot) {
@@ -1539,7 +1551,7 @@
                 });
 
                 // 2. Set STATUS SEKARANG (User sedang membuka/aktif di aplikasi)
-                // Menggunakan update() agar tidak menimpa data foto_profil yang sudah ada di master_users
+                // REVISI v3.6.1: Menghapus last_login dari trigger reconnect agar tidak tertimpa waktu palsu saat dc singkat
                 referensiStatus.update({
                     nama: username,
                     level: level,
@@ -1547,7 +1559,6 @@
                     status_user: "Aktif",          // Akun berstatus aktif (Bukan di-banned)
                     status_login: "Login",         // Menjaga status penanda pengiriman pesan tersampaikan tetap aman
                     status_aplikasi: "Online",     // Kunci penanda indikator hijau chat & hitungan online
-                    last_login: new Date().toLocaleString('id-ID'),
                     terakhir_dilihat: firebase.database.ServerValue.TIMESTAMP
                 });
             });
@@ -1713,7 +1724,8 @@
         }
 
         /**
-         * 15. REVISI UTAMA: FUNGSI KELUAR AKUN (SECURE CLEAN LOGOUT - FIXED REVISI)
+         * 15. REVISI UTAMA: FUNGSI KELUAR AKUN (SECURE CLEAN LOGOUT - FIXED REVISI v3.6.1)
+         * Menghapus sesi lokal, mengupdate status master_users, dan membersihkan token FCM agar tidak menumpuk
          */
         async function logout() {
             if (!confirm("Apakah Anda yakin ingin keluar dari sistem?")) {
@@ -1727,18 +1739,28 @@
                     const nodeUserAman = u.replace(/[\.\#\$\[\]]/g, '_');
                     console.log(`Menandai status keluar untuk user: [${nodeUserAman}]...`);
                     
-                    // PERBAIKAN: Target dirubah murni ke 'master_users' & status_user tetap 'Aktif'
+                    // 1. UPDATE STATUS AKUN USER DI MASTER_USERS
                     await database.ref('master_users/' + nodeUserAman).update({
                         status_user: "Aktif",
                         status_login: "Logout",
                         status_aplikasi: "Offline",
                         terakhir_dilihat: firebase.database.ServerValue.TIMESTAMP
                     }).catch((error) => console.error("Firebase Logout Sync Error:", error));
+
+                    // 2. TAMBAHAN v3.6.1: HAPUS TOKEN FCM DARI NODE fcm_tokens AGAR DATABASE BERSIH
+                    // Menyamakan format penamaan key token sesuai data riil database Anda
+                    const tokenNodeKey = `${u}_${btoa(window.location.origin)}`;
+                    console.log(`Membersihkan token perangkat FCM untuk node: [${tokenNodeKey}]...`);
+                    
+                    await database.ref('fcm_tokens/' + tokenNodeKey).remove()
+                        .then(() => console.log("[FCM Clean] Token berhasil dihapus dari Firebase."))
+                        .catch((error) => console.error("[FCM Clean Error] Gagal hapus token:", error));
                 }
             } catch (e) {
                 console.error("Gagal memproses pelepasan token Firebase:", e);
             }
 
+            // 3. MEMBERSIHKAN SESI PENYIMPANAN LOKAL (LOCALSTORAGE)
             localStorage.removeItem('userLevel');
             localStorage.removeItem('userDivisi');
             localStorage.removeItem('activeUser');
@@ -1754,6 +1776,7 @@
                 aturVisibilitasChat();
             }
             
+            // 4. MENGEMBALIKAN TAMPILAN KE MODAL LOGIN UTAMA
             const modal = document.getElementById('loginModal');
             if (modal) {
                 modal.classList.remove('hidden');
