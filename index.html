@@ -1078,53 +1078,38 @@
         });
 
         /**
-         * =============================================================
+         * ====================================================================
          * SISTEM TRANSMISI / BROADCAST NOTIFIKASI PUSH KELUAR (ALL DEVICE)
-         * Menembak langsung semua token perangkat yang aktif di database
-         * =============================================================
+         * Meneruskan parameter broadcast ke Apps Script secara terpusat
+         * ====================================================================
          */
         async function kirimBroadcastPush(judulNotif, isiPesan, tagKategori = 'logistik-update') {
             try {
-                // 1. Ambil semua token perangkat yang tersimpan di Firebase
-                const snapshot = await database.ref('fcm_tokens').once('value');
-                const daftarToken = snapshot.val();
-                
-                if (!daftarToken) {
-                    console.log('[Push Server] Tidak ada perangkat terdaftar di node fcm_tokens.');
-                    return;
-                }
+                // Gunakan URL Web App Google Apps Script Anda yang sama dengan sistem login/update data
+                const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4VBanf6TX4pQfpOJ3HVQ1Ms4Dr2ML9jBmf7MghjgcDw9vugg1c1B31CunnuPo79Lz3w/exec";
 
-                console.log('[Push Server] Memulai broadcast ke seluruh perangkat terdaftar...');
+                console.log('[FCM Web] Meneruskan instruksi broadcast ke server hub...');
 
-                // 2. Iterasi dan tembak masing-masing token subscription secara paralel
-                Object.keys(daftarToken).forEach(async (key) => {
-                    const subData = daftarToken[key];
-                    
-                    if (!subData || !subData.endpoint) return;
-
-                    // Buat payload data terstruktur sesuai format sw.js murni receiver kita
-                    const payload = {
-                        title: judulNotif,
-                        body: isiPesan,
-                        tag: tagKategori,
-                        url: window.location.origin + window.location.pathname
-                    };
-
-                    // Catatan: Untuk menembak endpoint enkripsi Google Push murni (FCM V1) secara langsung dari browser,
-                    // Kita bisa memanfaatkan bantuan REST endpoint atau Cloud Function. 
-                    // Sebagai alternatif instan bebas server, kita buat simulasi integrasi langsung via Fetch:
-                    try {
-                        // Jika Anda menggunakan pihak ketiga / proxy / Cloud Worker untuk memicu VAPID Push:
-                        // Namun jika ingin menggunakan REST Firebase legacy atau custom backend, 
-                        // di sini kita eksekusi trigger-nya.
-                        console.log(`[Push Server] Mengirim sinyal ke perangkat target: ${key}`);
-                    } catch (err) {
-                        console.error(`[Push Server] Gagal mengirim ke sub-device: ${key}`, err);
-                    }
-                });
+                fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: "kirimFCM",
+                        payload: {
+                            title: judulNotif,
+                            body: isiPesan,
+                            url: window.location.origin + window.location.pathname
+                        }
+                    })
+                })
+                .then(() => console.log('[FCM Web] Sinyal pemicu berhasil dikirim ke Apps Script.'))
+                .catch(err => console.error('[FCM Web] Gagal menghubungi Apps Script:', err));
 
             } catch (error) {
-                console.error('[Push Server] Gagal memproses data broadcast token:', error);
+                console.error('[FCM Web] Interupsi sistem antrean push:', error);
             }
         }
 
