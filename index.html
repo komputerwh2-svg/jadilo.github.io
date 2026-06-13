@@ -14,7 +14,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -934,14 +933,23 @@
 
     <script>
         /**
-         * =============================================================
+         * ====================================================================
          * SISTEM REGISTRASI TOKEN FCM (UNTUK BACKUP NOTIFIKASI MATI)
-         * Menggunakan Kunci Resmi VAPID Key Pair dari Firebase Console
-         * =============================================================
+         * REVISI v3.6.1 - ANTI USER ANONIM SINKRONISASI
+         * ====================================================================
          */
         async function inisialisasiFCM() {
             try {
-                // 1. Cek ketersediaan dan tunggu hingga Service Worker siap
+                // 1. Validasi awal: Ambil nama user aktif secara berlapis
+                const userAktif = localStorage.getItem('username') || localStorage.getItem('activeUser');
+                
+                // JIKA USERNAME KOSONG, JANGAN LANJUTKAN PROSES REGISTRASI TOKEN KE PUSH SERVER!
+                if (!userAktif || userAktif.trim() === "") {
+                    console.warn('[FCM Client] Pendaftaran token ditunda karena user belum login / tidak terdeteksi.');
+                    return;
+                }
+
+                // 2. Cek ketersediaan dan tunggu hingga Service Worker siap
                 if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
                     console.warn('[FCM] Browser ini tidak mendukung Web Push Notification.');
                     return;
@@ -949,14 +957,14 @@
 
                 const registration = await navigator.serviceWorker.ready;
                 
-                // 2. Minta izin notifikasi secara resmi kepada pengguna
+                // 3. Minta izin notifikasi secara resmi kepada pengguna
                 const permission = await Notification.requestPermission();
                 if (permission !== 'granted') {
                     console.warn('[FCM] Izin notifikasi ditolak oleh pengguna.');
                     return;
                 }
 
-                // 3. Daftarkan perangkat ke Push Server Google menggunakan VAPID Key resmi Anda
+                // 4. Daftarkan perangkat ke Push Server Google menggunakan VAPID Key resmi Anda
                 const VAPID_KEY = "BDw72VZAgzSjyHFFQmuhrPXC8xciFWsn6RwxpYi4sNuCwBB8eFOj4WWJZTPctHBJx5gyPurjWDxMTAxDNEXI22E"; 
                 
                 const subscription = await registration.pushManager.subscribe({
@@ -966,14 +974,15 @@
 
                 console.log('[FCM] Perangkat berhasil berlangganan Push Server Google:', subscription);
 
-                // 4. KOREKSI: Ambil nama user aktif secara konsisten dari localStorage untuk penamaan node
-                const userSesiLama = localStorage.getItem('activeUser') || 'user_anonim';
+                // Normalisasi nama user untuk penamaan node agar seragam dengan proses login (Contoh: 'admin' jadi 'Admin')
+                const usernameNormal = userAktif.charAt(0).toUpperCase() + userAktif.slice(1).trim();
                 
                 // Bersihkan string endpoint agar aman digunakan sebagai Key Node Firebase (menghilangkan karakter ilegal)
                 const deviceId = btoa(subscription.endpoint).substring(0, 20).replace(/[/+=]/g, ''); 
                 
-                await database.ref(`fcm_tokens/${userSesiLama}_${deviceId}`).set(subscription.toJSON());
-                console.log('[FCM] Token perangkat berhasil disinkronkan ke Cloud Firebase Database.');
+                // Simpan ke Realtime Database menggunakan struktur nama terverifikasi resmi (Bebas Anonim)
+                await database.ref(`fcm_tokens/${usernameNormal}_${deviceId}`).set(subscription.toJSON());
+                console.log(`[FCM] Token perangkat untuk [${usernameNormal}] berhasil disinkronkan ke Cloud Firebase Database.`);
 
             } catch (error) {
                 console.error('[FCM] Gagal mengonfigurasi Web Push Latar Belakang:', error);
@@ -997,7 +1006,7 @@
 
         /**
          * ====================================================================
-         * INITIALISASI HALAMAN UTAMA APLIKASI & AUTO-LOGIN SYSTEM (v0.1.8)
+         * INITIALISASI HALAMAN UTAMA APLIKASI & AUTO-LOGIN SYSTEM (v3.6.1 - FIXED)
          * Menggunakan DOMContentLoaded untuk Eksekusi Instan & Bebas Delay.
          * ====================================================================
          */
@@ -1011,9 +1020,9 @@
             const loginModal = document.getElementById('loginModal');
 
             const cacheFotoProfil = localStorage.getItem('userFotoBase64');
-                if (cacheFotoProfil) {
-                    tampilkanFotoDiUI(cacheFotoProfil);
-                }
+            if (cacheFotoProfil) {
+                tampilkanFotoDiUI(cacheFotoProfil);
+            }
 
             if (!userSesiLama || userSesiLama.trim() === "") {
                 // Jika tidak ada sesi aktif, langsung munculkan modal login di layar depan
@@ -1033,6 +1042,11 @@
                 // Panggil penegakan hak akses runtime sesuai level & divisi yang benar
                 if (typeof terapkanHakAkses === 'function') terapkanHakAkses();
                 if (typeof updateGreeting === 'function') updateGreeting();
+
+                // PERBAIKAN: Jalankan fungsi inisialisasi FCM HANYA jika sesi user valid terdeteksi
+                if (typeof inisialisasiFCM === 'function') {
+                    inisialisasiFCM();
+                }
             }
 
             // 2. FUNGSI UNTUK TAMPILAN JAM UTAMA APP & CHAT BUBBLE
@@ -1072,15 +1086,12 @@
                     
                 }, 5000);
             }
-
-            // Jalankan fungsi inisialisasi FCM saat seluruh UI halaman web selesai dimuat
-            inisialisasiFCM();
         });
 
         /**
          * ====================================================================
          * SISTEM TRANSMISI / BROADCAST NOTIFIKASI PUSH KELUAR (ALL DEVICE)
-         * Meneruskan parameter broadcast ke Apps Script secara terpusat
+         * Meneruskan parameter broadcast ke Apps Script secara terpusat (v3.6.1)
          * ====================================================================
          */
         async function kirimBroadcastPush(judulNotif, isiPesan, tagKategori = 'logistik-update') {
@@ -1090,23 +1101,31 @@
 
                 console.log('[FCM Web] Meneruskan instruksi broadcast ke server hub...');
 
-                fetch(APPS_SCRIPT_URL, {
+                // Membentuk payload bodi pesan secara terstruktur
+                const payloadData = {
+                    action: "kirimFCM",
+                    payload: {
+                        title: judulNotif,
+                        body: isiPesan,
+                        tag: tagKategori,
+                        url: window.location.origin + window.location.pathname
+                    }
+                };
+
+                // Eksekusi request ke Apps Script tanpa 'no-cors' agar payload terbaca utuh
+                const response = await fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'text/plain;charset=utf-8' // Standar aman bypass CORS Google Apps Script
                     },
-                    body: JSON.stringify({
-                        action: "kirimFCM",
-                        payload: {
-                            title: judulNotif,
-                            body: isiPesan,
-                            url: window.location.origin + window.location.pathname
-                        }
-                    })
-                })
-                .then(() => console.log('[FCM Web] Sinyal pemicu berhasil dikirim ke Apps Script.'))
-                .catch(err => console.error('[FCM Web] Gagal menghubungi Apps Script:', err));
+                    body: JSON.stringify(payloadData)
+                });
+
+                if (response.ok) {
+                    console.log('[FCM Web] Sinyal pemicu berhasil dikirim ke Apps Script.');
+                } else {
+                    console.warn('[FCM Web] Server Apps Script merespon dengan status kurang baik:', response.status);
+                }
 
             } catch (error) {
                 console.error('[FCM Web] Interupsi sistem antrean push:', error);
@@ -1343,7 +1362,7 @@
 
         /**
          * ====================================================================
-         * PROSES LOGIN UTAMA APLIKASI + SINKRONISASI OTOMATIS MASTER_USERS (v3.6.1)
+         * PROSES LOGIN UTAMA APLIKASI + SINKRONISASI OTOMATIS MASTER_USERS (v3.6.1 - FIXED OPTIMIZED)
          * Menempatkan Logika Pembentukan Node Firebase Saat Autentikasi Spreadsheet Sukses
          * ====================================================================
          */
@@ -1392,6 +1411,15 @@
                     if (userData && userData.password !== undefined) {
                         // Cocokkan password (dipaksa jadi string agar nomor/teks tidak sensitif)
                         if (String(userData.password) === String(p)) {
+                            
+                            // VALIDASI AMAN: Pastikan akun tidak sedang diblokir/nonaktif
+                            if (userData.status_user && userData.status_user === "Nonaktif") {
+                                alert("🚨 Akses ditolak! Akun Anda dinonaktifkan oleh Administrator.");
+                                btn.disabled = false;
+                                btn.innerText = "MASUK";
+                                return;
+                            }
+
                             console.log("⚡ Firebase REST API Auth: Hak akses sukses terverifikasi instan!");
 
                             localStorage.setItem('userLevel', userData.level || 'GUEST');
@@ -1399,15 +1427,12 @@
                             localStorage.setItem('activeUser', usernameNormal);
                             localStorage.setItem('username', usernameNormal);
 
-                            // PENEGAKAN STATUS DI JALUR UTAMA FIREBASE (REVISI SINKRONISASI v3.6.1)
+                            // PERBAIKAN LOGIKA: update minimal dilakukan di sini untuk last_login.
+                            // Pengkondisian status_aplikasi: "Online" diserahkan murni ke fungsi aktifkanSistemKehadiran()
                             if (typeof database !== 'undefined') {
                                 await database.ref(`master_users/${nodeUserAman}`).update({
-                                    status_user: "Aktif",
-                                    status_login: "Login",
-                                    status_aplikasi: "Online",
-                                    last_login: new Date().toLocaleString('id-ID'),
-                                    terakhir_dilihat: firebase.database.ServerValue.TIMESTAMP
-                                });
+                                    last_login: new Date().toLocaleString('id-ID')
+                                }).catch(e => console.error("Gagal update timestamp login:", e));
                             }
 
                             if (typeof sinkronisasiFotoProfilSaatLogin === 'function') {
@@ -1497,39 +1522,46 @@
         }
 
         /**
-         * FUNGSI SUB-STRUKTUR: MENYELARASKAN STATE ALUR LAMA PASCA LOGIN (v3.6.1)
+         * ====================================================================
+         * FUNGSI SUB-STRUKTUR: MENYELARASKAN STATE ALUR LAMA PASCA LOGIN (v3.6.1 - FIXED)
+         * Menjamin sinkronisasi kehadiran, hak akses, dan inisialisasi FCM berjalan tepat waktu.
+         * ====================================================================
          */
         function eksekusiPascaLogin(username, level) {
-            // 2. Sinkronisasi kehadiran real-time ke Firebase (Online & Penanda Aktif)
+            // 1. Sinkronisasi kehadiran real-time ke Firebase (Online & Penanda Aktif)
             const userDivisi = localStorage.getItem('userDivisi') || '';
-            aktifkanSistemKehadiran(username, level, userDivisi);
-
-            // [TAMBAHAN v3.6.1] Pemicu Sinkronisasi Token FCM Perangkat Pasca-Login
-            if (typeof mintaIzinNotifikasi === 'function') {
-                console.log("[FCM Client] Menginisialisasi token perangkat pasca login sukses...");
-                mintaIzinNotifikasi();
+            if (typeof aktifkanSistemKehadiran === 'function') {
+                aktifkanSistemKehadiran(username, level, userDivisi);
             }
 
-            // 3. Update komponen teks nama & ucapan salam
+            // [PERBAIKAN v3.6.1] Pemicu Sinkronisasi Token FCM Perangkat Pasca-Login Menggunakan Fungsi yang Benar
+            if (typeof inisialisasiFCM === 'function') {
+                console.log("[FCM Client] Menginisialisasi token perangkat pasca login sukses...");
+                inisialisasiFCM();
+            }
+
+            // 2. Update komponen teks nama & ucapan salam
             if (typeof updateGreeting === 'function') updateGreeting();
             if (typeof terapkanHakAkses === 'function') terapkanHakAkses();
             
-            // 4. Tutup modal terlebih dahulu sebelum menyalakan visibilitas tombol chat
+            // 3. Tutup modal terlebih dahulu sebelum menyalakan visibilitas tombol chat
             const loginModal = document.getElementById('loginModal');
             if (loginModal) loginModal.classList.add('hidden');
 
-            // 5. SEGERA MUNCULKAN CHAT BUBBLE
+            // 4. SEGERA MUNCULKAN CHAT BUBBLE
             if (typeof aturVisibilitasChat === 'function') {
                 aturVisibilitasChat(); 
             }
 
-            // 6. Tarik data riwayat jadwal muatan
+            // 5. Tarik data riwayat jadwal muatan
             if (typeof loadJadwal === 'function') loadJadwal();
         }
 
         /**
+         * ====================================================================
          * LOGIKA REALTIME PRESENCE (DETEKSI USER AKTIF & STATUS ONLINE)
-         * SUDAH SINKRON DENGAN MASTER_USERS & AKURAT TOTAL (REVISI v3.6.1)
+         * REVISI v3.6.1 - OPTIMIZED ANTI-SPIKE WRITE DATABASE
+         * ====================================================================
          */
         function aktifkanSistemKehadiran(username, level, divisi) {
             if (typeof database === 'undefined') return;
@@ -1564,7 +1596,7 @@
             });
 
             // ====================================================================
-            // BONUS LOGIKA: AUTO-UPDATE INDIKATOR ANGKA ONLINE DI UI CHAT
+            // AMAN: AUTO-UPDATE INDIKATOR ANGKA ONLINE DI UI CHAT (LOKAL RENDER)
             // ====================================================================
             database.ref('master_users').on('value', function(snap) {
                 const semuaUser = snap.val() || {};
@@ -1577,14 +1609,14 @@
                     }
                 });
 
-                // Tembak langsung ke komponen teks online kamu di HTML (sesuaikan ID jika ada)
+                // Tembak langsung ke komponen teks online kamu di HTML
                 const elementJumlahOnline = document.getElementById('presenceCount') || document.querySelector('.text-emerald-500 font-bold');
                 if (elementJumlahOnline) {
                     elementJumlahOnline.innerText = totalOnlineReal;
                 }
                 
-                // Jaga-jaga jika kamu juga butuh menyimpannya ke node global 'presence_count'
-                database.ref('presence_count').set(totalOnlineReal);
+                // PERBAIKAN v3.6.1: Menghapus baris .set() ke 'presence_count' global 
+                // untuk mencegah collision / tabrakan request antar client secara serentak.
             });
         }
 
@@ -1724,8 +1756,10 @@
         }
 
         /**
+         * ====================================================================
          * 15. REVISI UTAMA: FUNGSI KELUAR AKUN (SECURE CLEAN LOGOUT - FIXED REVISI v3.6.1)
-         * Menghapus sesi lokal, mengupdate status master_users, dan membersihkan token FCM agar tidak menumpuk
+         * Menghapus sesi lokal, mengupdate status master_users, dan membersihkan token FCM secara tuntas
+         * ====================================================================
          */
         async function logout() {
             if (!confirm("Apakah Anda yakin ingin keluar dari sistem?")) {
@@ -1736,7 +1770,10 @@
                 const u = localStorage.getItem('activeUser') || localStorage.getItem('username');
 
                 if (u && typeof database !== 'undefined') {
-                    const nodeUserAman = u.replace(/[\.\#\$\[\]]/g, '_');
+                    // Normalisasi kapitalisasi agar sinkron dengan node master_users
+                    const usernameNormal = u.charAt(0).toUpperCase() + u.slice(1).trim();
+                    const nodeUserAman = usernameNormal.replace(/[\.\#\$\[\]]/g, '_');
+                    
                     console.log(`Menandai status keluar untuk user: [${nodeUserAman}]...`);
                     
                     // 1. UPDATE STATUS AKUN USER DI MASTER_USERS
@@ -1747,14 +1784,27 @@
                         terakhir_dilihat: firebase.database.ServerValue.TIMESTAMP
                     }).catch((error) => console.error("Firebase Logout Sync Error:", error));
 
-                    // 2. TAMBAHAN v3.6.1: HAPUS TOKEN FCM DARI NODE fcm_tokens AGAR DATABASE BERSIH
-                    // Menyamakan format penamaan key token sesuai data riil database Anda
-                    const tokenNodeKey = `${u}_${btoa(window.location.origin)}`;
-                    console.log(`Membersihkan token perangkat FCM untuk node: [${tokenNodeKey}]...`);
+                    // 2. TAMBAHAN v3.6.1: HAPUS SEMUA TOKEN FCM YANG DIAWALI OLEH USERNAME INI
+                    // Menggunakan query startAt dan endAt agar semua device id milik user ini ikut bersih
+                    console.log(`Membersihkan seluruh token perangkat FCM untuk user: [${usernameNormal}]...`);
                     
-                    await database.ref('fcm_tokens/' + tokenNodeKey).remove()
-                        .then(() => console.log("[FCM Clean] Token berhasil dihapus dari Firebase."))
-                        .catch((error) => console.error("[FCM Clean Error] Gagal hapus token:", error));
+                    const snapshotTokens = await database.ref('fcm_tokens')
+                        .orderByKey()
+                        .startAt(usernameNormal + "_")
+                        .endAt(usernameNormal + "_\uf8ff")
+                        .once('value');
+
+                    if (snapshotTokens.exists()) {
+                        const targets = snapshotTokens.val();
+                        const hapusPromises = Object.keys(targets).map(key => {
+                            return database.ref(`fcm_tokens/${key}`).remove();
+                        });
+                        // Tunggu sampai seluruh proses penghapusan token selesai di cloud
+                        await Promise.all(hapusPromises);
+                        console.log("[FCM Clean] Semua token perangkat milik user berhasil dibersihkan.");
+                    } else {
+                        console.log("[FCM Clean] Tidak ada token gantung yang perlu dibersihkan.");
+                    }
                 }
             } catch (e) {
                 console.error("Gagal memproses pelepasan token Firebase:", e);
