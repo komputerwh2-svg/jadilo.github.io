@@ -1,4 +1,4 @@
-// sw.js - Service Worker JADILO (Revisi v3.6.1 - Pure Web Push Receiver)
+// sw.js - Service Worker JADILO (Revisi v0.1.7 - Pure Web Push Receiver)
 const CACHE_NAME = 'jadilo-cache-v0.1.7';
 const urlsToCache = [
   './',
@@ -14,13 +14,28 @@ self.addEventListener('push', event => {
   let dataNotif = { 
     title: "Update JADILO Logistik", 
     body: "Ada pembaruan status armada atau muatan baru.",
-    tag: "logistik-update"
+    url: "./"
   };
 
   if (event.data) {
     try {
-      // Jika server mengirimkan data berupa objek JSON terstruktur
-      dataNotif = event.data.json();
+      const rawJson = event.data.json();
+      
+      // SINKRONISASI: Membongkar bungkus payload bawaan Firebase FCM v1
+      if (rawJson.notification) {
+        dataNotif.title = rawJson.notification.title || dataNotif.title;
+        dataNotif.body = rawJson.notification.body || dataNotif.body;
+      } else {
+        dataNotif.title = rawJson.title || dataNotif.title;
+        dataNotif.body = rawJson.body || rawJson.message || dataNotif.body;
+      }
+      
+      // Mengambil URL tujuan jika disematkan
+      if (rawJson.data && rawJson.data.url) {
+        dataNotif.url = rawJson.data.url;
+      } else if (rawJson.url) {
+        dataNotif.url = rawJson.url;
+      }
     } catch (e) {
       // Jika server hanya mengirimkan teks biasa
       dataNotif.body = event.data.text();
@@ -29,12 +44,12 @@ self.addEventListener('push', event => {
 
   // Konfigurasi visual banner pop-up notifikasi luar sistem operasi
   const options = {
-    body: dataNotif.body || dataNotif.message,
+    body: dataNotif.body,
     icon: './icon.png',
-    badge: './icon.png',
     vibrate: [100, 50, 100],
-    tag: dataNotif.tag || 'logistik-update', // Memisahkan tag agar tidak saling menimpa
+    tag: 'logistik-update', 
     renotify: true,
+    requireInteraction: true, // Memaksa notifikasi tetap melayang sebelum ditutup user
     data: { 
       url: dataNotif.url || './' 
     }
