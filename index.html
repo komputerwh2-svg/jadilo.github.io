@@ -5466,7 +5466,7 @@
 
 
         // ====================================================================
-        // KIRIM / UPDATE STATUS KE WHATSAPP ASLI (GAYA GRUP + INFO LENGKAP)
+        // KIRIM / UPDATE STATUS KE WHATSAPP ASLI (REVISI FORMAT GRUP)
         // ====================================================================
         const URL_APLIKASI_JADILO = "https://komputerwh2-svg.github.io/jadilo.github.io/";
 
@@ -5483,54 +5483,6 @@
             return "❌";
         }
 
-        function formatDetailGudangWA(whAngka, jamSelesai, statusArmada, labelGudangLawan) {
-            const krt = parseInt(whAngka || 0);
-            const st = String(statusArmada || "BELUM").toUpperCase();
-            if (jamSelesai) {
-                return `${krt.toLocaleString('id-ID')} Krt (Selesai ${jamSelesai} WIB)`;
-            }
-            if (st === "DATANG") {
-                return `${krt.toLocaleString('id-ID')} Krt (Antrian / Full ${labelGudangLawan})`;
-            }
-            if (st === "PENDING") {
-                return `${krt.toLocaleString('id-ID')} Krt (Muat Besok)`;
-            }
-            return `${krt.toLocaleString('id-ID')} Krt (Belum Datang)`;
-        }
-
-        function kirimStatusArmadaWA(id, tanggal) {
-            const cache = window.localCacheData || [];
-            const item = cache.find(d => d && String(d.id) === String(id));
-            if (!item) return alert("Data armada tidak ditemukan.");
-
-            const ekspedisi = item.ekspedisi || "-";
-            const kota = item.kota || "-";
-            const driver = item.driver || "-";
-            const nopol = item.nopol || "-";
-            const status = String(item.status || "BELUM").toUpperCase();
-            const simbol = getSimbolStatusWA(status);
-            const wh1 = parseInt(item.wh1 || 0);
-            const wh2 = parseInt(item.wh2 || 0);
-            const totalMuat = wh1 + wh2;
-
-            const infoWaktuStatus = item.timeStatus ? ` (${status} Jam ${item.timeStatus} WIB)` : ` (${status})`;
-
-            const pesan = [
-                `*Info armada ${tanggal}*`,
-                `1. *${ekspedisi} - ${kota}* ${simbol}${infoWaktuStatus}`,
-                `   Driver : ${driver}`,
-                `   Nopol  : ${nopol}`,
-                `   WH-1   : ${formatDetailGudangWA(wh1, item.timeWh1, status, "WH-2")}`,
-                `   WH-2   : ${formatDetailGudangWA(wh2, item.timeWh2, status, "WH-1")}`,
-                `   Total  : *${totalMuat.toLocaleString('id-ID')} Karton*`,
-                ``,
-                `Info lebih lanjut silakan buka via *aplikasi* :`,
-                URL_APLIKASI_JADILO
-            ].join("\n");
-
-            bukaWhatsAppDenganTeks(pesan);
-        }
-
         function kirimRekapJadwalWA(tanggal) {
             const cache = window.localCacheData || [];
             const items = cache.filter(item => {
@@ -5541,44 +5493,49 @@
 
             if (items.length === 0) return alert("Tidak ada data jadwal pada tanggal ini.");
 
-            const grandTotal = items.reduce((sum, it) => sum + (parseInt(it.wh1 || 0) + parseInt(it.wh2 || 0)), 0);
-            const adaBelumDatang = items.some(it => String(it.status || "BELUM").toUpperCase() === "BELUM");
+            let jmlDatang = 0;
+            let jmlPending = 0;
+            let jmlBelum = 0;
+
+            items.forEach(it => {
+                const st = String(it.status || "BELUM").toUpperCase();
+                if (st === "DATANG") jmlDatang++;
+                else if (st === "PENDING") jmlPending++;
+                else jmlBelum++;
+            });
+
+            const bagianRingkasanStatus = jmlPending > 0
+                ? `Datang: ${jmlDatang} | Pending: ${jmlPending} | Belum : ${jmlBelum}`
+                : `Datang: ${jmlDatang} | Belum : ${jmlBelum}`;
 
             const daftarBaris = items.map((it, idx) => {
                 const st = String(it.status || "BELUM").toUpperCase();
                 const simbol = getSimbolStatusWA(st);
-                const wh1 = parseInt(it.wh1 || 0);
-                const wh2 = parseInt(it.wh2 || 0);
-                const total = wh1 + wh2;
-
                 const jamSt = it.timeStatus ? ` | ${st} ${it.timeStatus}` : (st !== "BELUM" ? ` | ${st}` : "");
-                const detailMuat = (wh1 > 0 || wh2 > 0 || it.timeWh1 || it.timeWh2)
-                    ? ` [WH-1: ${wh1}${it.timeWh1 ? `@${it.timeWh1}` : ""} | WH-2: ${wh2}${it.timeWh2 ? `@${it.timeWh2}` : ""} | Tot: ${total} Krt]`
-                    : ` [Tot: ${total} Krt]`;
 
                 return [
                     `${idx + 1}. *${it.ekspedisi || '-'} - ${it.kota || '-'}* ${simbol}${jamSt}`,
-                    `   ${it.driver || '-'} (${it.nopol || '-'})${detailMuat}`
+                    `   ${it.driver || '-'} (${it.nopol || '-'})`
                 ].join("\n");
-            }).join("\n");
+            }).join("\n\n");
 
-            const bagianPenutup = adaBelumDatang
+            const bagianPenutup = jmlBelum > 0
                 ? `Mohon bantuannya untuk memastikan kedatangan armada yg belum datang 🙏🏻`
                 : `Semua armada pada jadwal ini sudah terupdate 🙏🏻`;
 
             const pesan = [
                 `*Info armada ${tanggal}*`,
-                `Total Muat : *${grandTotal.toLocaleString('id-ID')} Karton* (${items.length} Armada)`,
+                `Total Armada : *${items.length}* [ ${bagianRingkasanStatus} ]`,
                 ``,
                 daftarBaris,
                 ``,
                 bagianPenutup,
-                `Info lebih lanjut silakan buka via *aplikasi* :`,
+                `Info lebih lanjut silakan buka via *Aplikasi* :`,
                 URL_APLIKASI_JADILO
             ].join("\n");
 
             bukaWhatsAppDenganTeks(pesan);
-        }    
+        }   
 
 
     // REGISTRASI SERVICE WORKER (JADILO v0.1.7)
