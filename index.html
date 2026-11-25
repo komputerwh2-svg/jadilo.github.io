@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2563eb">
-    <title>Jadwal Driver Logistik v0.1.8 beta</title>
+    <title>Jadwal Driver Logistik v0.1.9 beta</title>
     <link rel="icon" type="image/jpeg" href="icon.png">
     <link rel="apple-touch-icon" href="icon.jpg">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -174,8 +174,22 @@
                 0
             </span>
             
-            <button id="chat-button-handle" onclick="toggleChat()" class="w-12 h-12 rounded-full bg-green-600 text-white flex items-center justify-center shadow-lg active:scale-90 transition-all text-xl dark:bg-green-500">
-                <i class="fa-brands fa-whatsapp text-3xl"></i>
+            <button id="chat-button-handle" onclick="toggleChat()" aria-label="Chat WhatsApp Jadilo" class="w-12 h-12 rounded-full bg-green-600 text-white flex items-center justify-center shadow-lg active:scale-90 transition-all dark:bg-green-500">
+                <svg class="w-8 h-8" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Speech Bubble Outline (gaya bubble chat seperti referensi) -->
+                    <path d="M32 10C19.297 10 9 18.954 9 30C9 34.55 10.78 38.75 13.78 42.12L10.8 51.2L20.65 47.5C24.12 49.12 27.97 50 32 50C44.703 50 55 41.046 55 30C55 18.954 44.703 10 32 10Z"
+                        stroke="currentColor" stroke-width="3.6" stroke-linejoin="round"/>
+                    
+                    <!-- Elemen Logo JDL di dalam bubble (J + bodi D/L truk + 2 roda + lengkung bawah) -->
+                    <path d="M18 22H29.5L26.8 34.5C26.1 37.6 23.6 39.2 20.4 39.2C18.2 39.2 16.7 38.3 16 36.8"
+                        stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M31.5 22H37.5C41.8 22 44.2 24.4 43.4 28.4L42 35.5H48.5L47.5 39.2H30.2L31.5 22Z"
+                        stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+                    <circle cx="25.5" cy="40.5" r="2.8" fill="currentColor"/>
+                    <circle cx="42.5" cy="40.5" r="2.8" fill="currentColor"/>
+                    <path d="M16.5 44.8C24.5 47.4 35.5 47.4 46.5 44.5"
+                        stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+                </svg>
             </button>
         </div>
     </div>
@@ -281,7 +295,7 @@
     <div id="main-header" class="bg-gradient-to-br from-blue-600 to-blue-800 dark:from-slate-800 dark:to-slate-900 text-white p-6 pb-4 rounded-b-[40px] shadow-lg sticky top-0 z-50 transition-colors duration-300">
         
         <div class="absolute top-6 right-6 bg-white/20 dark:bg-slate-700/40 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold border border-white/30 dark:border-slate-600/50 tracking-wide">
-            v0.1.8 beta
+            v0.1.9 beta
         </div>
         
         <h1 class="text-xl font-black tracking-wider text-white dark:text-slate-100">J A D I L O</h1>
@@ -622,11 +636,11 @@
             <div class="mt-10 space-y-3 text-left">
                 <div class="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/60 shadow-sm transition-colors">
                     <span class="text-[11px] text-slate-600 dark:text-slate-400 font-bold">Versi</span>
-                    <span class="text-[11px] bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full font-bold">v0.1.8 beta</span>
+                    <span class="text-[11px] bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full font-bold">v0.1.9 beta</span>
                 </div>
                 <div class="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/60 shadow-sm transition-colors">
                     <span class="text-[11px] text-slate-600 dark:text-slate-400 font-bold">Update Terakhir</span>
-                    <span class="text-[11px] text-slate-800 dark:text-slate-200 font-bold">21 Mei 2026</span>
+                    <span class="text-[11px] text-slate-800 dark:text-slate-200 font-bold">25 November 2026</span>
                 </div>
             </div>
 
@@ -640,7 +654,19 @@
                     <div class="timeline-item border-l-2 border-slate-200 dark:border-slate-800 pl-4 pb-6 relative">
                         <div class="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-red-600 dark:bg-red-500 animate-pulse"></div>
                         
-                        <span class="text-[11px] font-black text-red-600 dark:text-red-500">v0.1.8 | 21 Mei 2026 (Terbaru)</span>
+                        <span class="text-[11px] font-black text-red-600 dark:text-red-500">v0.1.9 | 25 November 2026 (Terbaru)</span>
+                        <ul class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 list-disc ml-4 space-y-1 leading-relaxed">
+                            <li><strong>Dialog & Async Flow Hardening:</strong> Audit dan perapian pemanggilan dialog kustom <code>jadiloDialog</code>, penggantian referensi <code>Swal.fire</code> yang belum termuat pada mode tamu, penyelarasan fungsi <code>async</code>/<code>await</code> pada konfirmasi (seperti <code>hapusChatLokal</code>), serta penjagaan visibilitas <code>#chat-bubble</code> saat <code>sub-page</code> aktif.</li>
+                            <li><strong>WhatsApp Floating Action Routing:</strong> Pengarahan fungsi tombol gelembung obrolan mengambang menuju alur koordinasi/pengiriman ke WhatsApp agar akses komunikasi operasional lebih langsung.</li>
+                            <li><strong>JDL Chat-Bubble SVG Icon:</strong> Pembaruan konten visual di dalam <code>#chat-bubble</code> dari ikon WhatsApp standar menjadi ikon <em>speech bubble</em> berbingkai garis yang memadukan elemen monogram dan siluet truk/roda khas logo <strong>JDL</strong> dengan dukungan <code>currentColor</code> untuk mode terang dan gelap.</li>
+                            <li><strong>Schedule, Report & Status Flow Fixes:</strong> Perbaikan bug serta penyelarasan alur kerja dan validasi data pada halaman jadwal, laporan, dan status.</li>
+                            <li><strong>UI Layout & Theme Refinement:</strong> Penyesuaian tampilan, proporsi layout, dan konsistensi warna pada mode terang maupun tema gelap.</li>
+                            <li><strong>SW, Cache, Notification & Sync Updates:</strong> Pembaruan konfigurasi service worker, strategi cache, mekanisme notifikasi, serta sinkronisasi data.</li>
+                        </ul>
+                    </div>
+
+                    <div class="timeline-item border-l-2 border-slate-200 dark:border-slate-800 pl-4 pb-6 relative">
+                        <span class="text-[11px] font-bold text-blue-500 dark:text-blue-400">v0.1.8 | 21 Mei 2026</span>
                         <ul class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 list-disc ml-4 space-y-1 leading-relaxed">
                             <li><strong>PWA Core Manifest Implementation:</strong> Penyediaan file konfigurasi <code>manifest.json</code> eksternal serta pembaruan tag metadata header aplikasi untuk memenuhi standar pemenuhan kriteria instalasi mandiri (*Standalone Chrome App*) langsung dari address bar browser.</li>
                             <li><strong>Path-Routing Isolation Fix:</strong> Transisi penulisan alamat pemicu berkas dari path absolut (<code>/</code>) menuju path relatif (<code>./</code>) pada skrip registrasi Service Worker dan daftar <code>urlsToCache</code> guna menjamin kelancaran muat offline di dalam sub-folder repositori hosting GitHub Pages.</li>
@@ -973,6 +999,22 @@
         </div>
     </div>
 
+    <!-- Modal Dialog Notifikasi -->
+    <div id="jadiloDialogModal" class="fixed inset-0 z-[9999] hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity">
+        <div id="jadiloDialogCard" class="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-6 shadow-2xl transform transition-all scale-95 opacity-0">
+            <div class="flex items-start gap-3.5">
+            <div id="jadiloDialogIcon" class="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 text-lg">
+                <i class="fa-solid fa-circle-info"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <h3 id="jadiloDialogTitle" class="text-sm font-bold text-slate-800 dark:text-slate-100">Informasi</h3>
+                <p id="jadiloDialogMessage" class="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300 whitespace-pre-line break-words"></p>
+            </div>
+            </div>
+            <div id="jadiloDialogActions" class="mt-5 flex justify-end gap-2"></div>
+        </div>
+    </div>
+
     <!-- Sub Halaman Notifikasi -->
     <div id="notifikasi-page" class="sub-page hidden fixed inset-0 bg-slate-50 z-[1100] flex flex-col dark:bg-slate-950">  
         <div class="bg-white p-4 flex items-center gap-4 sticky top-0 shadow-sm z-50 dark:bg-slate-900 dark:border-b dark:border-slate-800">
@@ -1140,6 +1182,78 @@
                 console.error('[FCM] Gagal mengonfigurasi Web Push Latar Belakang:', error);
             }
         }
+
+        window.jadiloDialog = function jadiloDialog(type, message, options = {}) {
+            const modal = document.getElementById('jadiloDialogModal');
+            const card = document.getElementById('jadiloDialogCard');
+            const iconBox = document.getElementById('jadiloDialogIcon');
+            const titleEl = document.getElementById('jadiloDialogTitle');
+            const msgEl = document.getElementById('jadiloDialogMessage');
+            const actionsEl = document.getElementById('jadiloDialogActions');
+            const chatBubble = document.getElementById('chat-bubble');
+
+            const isConfirm = type === 'confirm';
+            const variant = options.variant || (isConfirm ? 'warning' : 'info');
+            const styles = {
+                info:    { icon: 'fa-circle-info',         cls: 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400',     btn: 'bg-blue-600 hover:bg-blue-700 text-white' },
+                success: { icon: 'fa-circle-check',        cls: 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400', btn: 'bg-emerald-600 hover:bg-emerald-700 text-white' },
+                warning: { icon: 'fa-triangle-exclamation',cls: 'bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400',   btn: 'bg-blue-600 hover:bg-blue-700 text-white' },
+                danger:  { icon: 'fa-trash-can',           cls: 'bg-rose-50 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400',       btn: 'bg-rose-600 hover:bg-rose-700 text-white' }
+            };
+            const cfg = styles[variant] || styles.info;
+
+            return new Promise((resolve) => {
+                titleEl.textContent = options.title || (isConfirm ? 'Konfirmasi' : 'Pemberitahuan');
+                msgEl.textContent = String(message ?? '');
+                iconBox.className = `w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 text-lg ${cfg.cls}`;
+                iconBox.innerHTML = `<i class="fa-solid ${options.icon || cfg.icon}"></i>`;
+                actionsEl.innerHTML = '';
+
+                const close = (result) => {
+                card.classList.add('scale-95', 'opacity-0');
+                modal.classList.add('opacity-0');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex', 'opacity-0');
+                    if (chatBubble) chatBubble.style.display = '';
+                    resolve(result);
+                }, 150);
+                };
+
+                const makeBtn = (label, cls, onClick) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.textContent = label;
+                btn.className = `px-4 py-2 rounded-xl text-xs font-semibold transition active:scale-95 cursor-pointer ${cls}`;
+                btn.onclick = onClick;
+                return btn;
+                };
+
+                if (isConfirm) {
+                actionsEl.appendChild(makeBtn(
+                    options.cancelText || 'Batal',
+                    'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600',
+                    () => close(false)
+                ));
+                }
+                actionsEl.appendChild(makeBtn(
+                options.confirmText || (isConfirm ? 'Ya, Lanjutkan' : 'OK'),
+                options.confirmClass || cfg.btn,
+                () => close(isConfirm ? true : undefined)
+                ));
+
+                if (chatBubble) chatBubble.style.display = 'none';
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                requestAnimationFrame(() => {
+                card.classList.remove('scale-95', 'opacity-0');
+                card.classList.add('scale-100', 'opacity-100');
+                });
+            });
+            };
+
+            window.alert = (msg, options) => window.jadiloDialog('alert', msg, options);
+            window.confirm = (msg, options) => window.jadiloDialog('confirm', msg, options);
 
         /**
          * Fungsi bantu untuk mengonversi VAPID string ke format Uint8Array yang dipahami oleh mesin browser
@@ -1960,8 +2074,14 @@
          * ====================================================================
          */
         async function logout() {
-            if (!confirm("Apakah Anda yakin ingin keluar dari sistem?")) {
-                return; 
+            const yakin = await confirm("Apakah Anda yakin ingin keluar dari sistem?", {
+                title: "Konfirmasi Keluar",
+                variant: "warning",
+                confirmText: "Ya, Keluar",
+                cancelText: "Batal"
+            });
+            if (!yakin) {
+                return;
             }
 
             try {
@@ -1971,9 +2091,9 @@
                     // Normalisasi kapitalisasi agar sinkron dengan node master_users
                     const usernameNormal = u.charAt(0).toUpperCase() + u.slice(1).trim();
                     const nodeUserAman = usernameNormal.replace(/[\.\#\$\[\]]/g, '_');
-                    
+
                     console.log(`Menandai status keluar untuk user: [${nodeUserAman}]...`);
-                    
+
                     // 1. UPDATE STATUS AKUN USER DI MASTER_USERS
                     await database.ref('master_users/' + nodeUserAman).update({
                         status_user: "Aktif",
@@ -1985,7 +2105,7 @@
                     // 2. TAMBAHAN v3.6.1: HAPUS SEMUA TOKEN FCM YANG DIAWALI OLEH USERNAME INI
                     // Menggunakan query startAt dan endAt agar semua device id milik user ini ikut bersih
                     console.log(`Membersihkan seluruh token perangkat FCM untuk user: [${usernameNormal}]...`);
-                    
+
                     const snapshotTokens = await database.ref('fcm_tokens')
                         .orderByKey()
                         .startAt(usernameNormal + "_")
@@ -2013,9 +2133,9 @@
             localStorage.removeItem('userDivisi');
             localStorage.removeItem('activeUser');
             localStorage.removeItem('username');
-            localStorage.removeItem('database_jadwal'); 
+            localStorage.removeItem('database_jadwal');
             localStorage.removeItem('userFotoBase64');
-            
+
             if (typeof tampilkanFotoDiUI === 'function') {
                 tampilkanFotoDiUI(null);
             }
@@ -2023,7 +2143,7 @@
             if (typeof aturVisibilitasChat === 'function') {
                 aturVisibilitasChat();
             }
-            
+
             // 4. MENGEMBALIKAN TAMPILAN KE MODAL LOGIN UTAMA
             const modal = document.getElementById('loginModal');
             if (modal) {
@@ -2033,7 +2153,7 @@
                 if (inputUser) inputUser.value = "";
                 if (inputPass) inputPass.value = "";
             }
-            
+
             console.log("Sesi dibersihkan murni. Memuat ulang sistem...");
             location.reload();
         }
@@ -4675,10 +4795,18 @@
 
         async function hapusArmadaJadwal(id, tanggal, labelInfo = "") {
             if (!bisaKelolaMasterJadwal()) {
-                return alert("Akses Terbatas: Hanya ADMIN atau PENJ yang dapat menghapus armada.");
+                return await alert("Akses Terbatas: Hanya ADMIN atau PENJ yang dapat menghapus armada.", {
+                    title: "Akses Ditolak",
+                    variant: "warning"
+                });
             }
 
-            const konfirmasi = confirm(`Hapus armada ${labelInfo || id} dari jadwal ${tanggal}?`);
+            const konfirmasi = await confirm(`Hapus armada ${labelInfo || id} dari jadwal ${tanggal}?`, {
+                title: "Hapus Armada",
+                variant: "danger",
+                confirmText: "Ya, Hapus",
+                cancelText: "Batal"
+            });
             if (!konfirmasi) return;
 
             try {
@@ -4699,27 +4827,49 @@
                     switchTab('jadwal', document.getElementById('nav-jadwal'));
                 }
             } catch (err) {
-                alert("Gagal menghapus armada: " + err.message);
+                await alert("Gagal menghapus armada: " + err.message, {
+                    title: "Gagal Menghapus",
+                    variant: "danger"
+                });
             }
         }
 
         async function hapusTanggalJadwal(tanggal) {
             if (!bisaKelolaMasterJadwal()) {
-                return alert("Akses Terbatas: Hanya ADMIN atau PENJ yang dapat menghapus jadwal tanggal ini.");
+                return await alert("Akses Terbatas: Hanya ADMIN atau PENJ yang dapat menghapus jadwal tanggal ini.", {
+                    title: "Akses Ditolak",
+                    variant: "warning"
+                });
             }
 
-            const yakin1 = confirm(`Hapus seluruh jadwal tanggal "${tanggal}" dari server?`);
+            const yakin1 = await confirm(`Hapus seluruh jadwal tanggal "${tanggal}" dari server?`, {
+                title: "Hapus Jadwal Tanggal",
+                variant: "warning",
+                confirmText: "Lanjutkan",
+                cancelText: "Batal"
+            });
             if (!yakin1) return;
 
-            const yakin2 = confirm(`Konfirmasi terakhir: Semua data driver pada tanggal "${tanggal}" akan dihapus permanen. Lanjutkan?`);
+            const yakin2 = await confirm(`Konfirmasi terakhir: Semua data driver pada tanggal "${tanggal}" akan dihapus permanen. Lanjutkan?`, {
+                title: "Konfirmasi Penghapusan Permanen",
+                variant: "danger",
+                confirmText: "Hapus Permanen",
+                cancelText: "Batal"
+            });
             if (!yakin2) return;
 
             try {
                 const nodeTanggal = getNodeTanggalFirebase(tanggal);
                 await database.ref(`master_jadwal/hari_${nodeTanggal}`).remove();
-                alert(`Jadwal tanggal ${tanggal} berhasil dihapus.`);
+                await alert(`Jadwal tanggal ${tanggal} berhasil dihapus.`, {
+                    title: "Berhasil Dihapus",
+                    variant: "success"
+                });
             } catch (err) {
-                alert("Gagal menghapus tanggal jadwal: " + err.message);
+                await alert("Gagal menghapus tanggal jadwal: " + err.message, {
+                    title: "Gagal Menghapus",
+                    variant: "danger"
+                });
             }
         }
 
@@ -5709,7 +5859,7 @@
                 ``,
                 bagianPenutup,
                 ``,
-                `Info lebih lanjut silakan buka via *Aplikasi JADILO* :`,
+                `Info selengkapnya silakan buka via *Aplikasi JADILO* :`,
                 URL_APLIKASI_JADILO
             ].join("\n");
 
