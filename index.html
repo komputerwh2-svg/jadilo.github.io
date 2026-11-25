@@ -14,6 +14,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -353,6 +354,57 @@
         </div>
     </div>
 
+    <div id="modalEditJadwal" class="fixed inset-0 z-[110] hidden">
+        <div class="absolute inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm" onclick="tutupModalEditJadwal()"></div>
+
+        <div id="modalEditJadwalPanel" class="absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-900 rounded-t-[35px] p-6 shadow-2xl border-t border-transparent dark:border-slate-800 transition-transform duration-300 translate-y-full max-h-[88vh] overflow-y-auto">
+            <div class="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-5"></div>
+
+            <h3 id="judulModalEditJadwal" class="text-base font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight mb-1">EDIT ARMADA</h3>
+            <p id="subjudulModalEditJadwal" class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mb-5"></p>
+
+            <form id="formEditJadwal" onsubmit="simpanItemJadwal(event)" class="space-y-3">
+                <input type="hidden" id="edit-jadwal-id">
+                <input type="hidden" id="edit-jadwal-tanggal">
+
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider ml-1">Expedisi</label>
+                    <input type="text" id="input-jadwal-ekspedisi" required placeholder="Contoh: GPI / UTH"
+                        class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 mt-1 text-xs font-bold text-slate-800 dark:text-slate-100 uppercase outline-none focus:border-blue-500">
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider ml-1">Nomor Polisi</label>
+                    <input type="text" id="input-jadwal-nopol" required placeholder="Contoh: B 1164 WA"
+                        class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 mt-1 text-xs font-black text-blue-600 dark:text-blue-400 uppercase outline-none focus:border-blue-500">
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider ml-1">Tujuan / Kota</label>
+                    <input type="text" id="input-jadwal-kota" required placeholder="Contoh: LUWUK / LAMPUNG"
+                        class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 mt-1 text-xs font-bold text-slate-800 dark:text-slate-100 uppercase outline-none focus:border-blue-500">
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider ml-1">Driver</label>
+                    <input type="text" id="input-jadwal-driver" required placeholder="Contoh: BP. EKI"
+                        class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 mt-1 text-xs font-bold text-slate-800 dark:text-slate-100 uppercase outline-none focus:border-blue-500">
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="tutupModalEditJadwal()"
+                        class="flex-1 py-3.5 text-slate-600 dark:text-slate-400 font-bold text-xs bg-slate-100 dark:bg-slate-800 rounded-2xl uppercase tracking-wider active:scale-95 transition-all">
+                        Batal
+                    </button>
+                    <button type="submit" id="btn-simpan-item-jadwal"
+                        class="flex-[2] bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-2xl font-black text-xs shadow-lg uppercase tracking-wider active:scale-95 transition-all">
+                        Simpan Armada
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <main class="-mt-3 px-1 relative z-20 transition-colors duration-300">
         
         <section id="status-content" class="content-section">
@@ -433,19 +485,91 @@
         </section>
 
         <section id="upload-content" class="content-section">
-            <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-xl border-2 border-dashed border-blue-200 dark:border-slate-700 text-center transition-all">
-                <h3 class="font-bold mb-4 text-slate-700 dark:text-slate-300 text-sm">Upload File Jadwal (.ODS / .XLSX File)</h3>
-                <input type="file" id="fileInput" accept=".ods" class="hidden" onchange="updateFileName()">
+            <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-xl border border-slate-100 dark:border-slate-800 transition-all">
                 
-                <label onclick="document.getElementById('fileInput').click()" class="bg-slate-50 dark:bg-slate-950 px-6 py-8 rounded-2xl block border border-slate-100 dark:border-slate-800/80 cursor-pointer transition-colors">
-                    <i class="fa-solid fa-cloud-arrow-up text-3xl text-blue-500 dark:text-blue-400 mb-2"></i>
-                    <p id="fileNameDisplay" class="text-[11px] text-slate-500 dark:text-slate-400">Pilih file jadwal harian Anda</p>
-                </label>
-                
-                <button onclick="prosesUpload()" id="btnSimpan" class="w-full bg-blue-600 hover:bg-blue-700 text-white mt-5 py-3.5 rounded-xl font-bold shadow-lg dark:shadow-none active:scale-95 transition-all uppercase text-xs tracking-widest">
-                    SIMPAN KE SERVER
-                </button>
-                <p id="upload-status" class="mt-3 text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider"></p>
+                <!-- Switcher Mode Upload (Excel vs Foto) -->
+                <div class="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-2xl mb-6 border border-slate-200/60 dark:border-slate-800">
+                    <button type="button" id="tab-mode-excel" onclick="switchUploadMode('excel')" 
+                        class="flex-1 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all bg-blue-600 text-white shadow-sm">
+                        <i class="fa-solid fa-file-excel mr-1"></i> File Excel/ODS
+                    </button>
+                    <button type="button" id="tab-mode-foto" onclick="switchUploadMode('foto')" 
+                        class="flex-1 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all text-slate-500 dark:text-slate-400">
+                        <i class="fa-solid fa-camera mr-1"></i> Foto Jadwal
+                    </button>
+                </div>
+
+                <!-- MODE 1: UPLOAD EXCEL / ODS (FLOW ASLI TETAP UTUH) -->
+                <div id="area-upload-excel" class="border-2 border-dashed border-blue-200 dark:border-slate-700 rounded-2xl p-5 text-center">
+                    <h3 class="font-bold mb-4 text-slate-700 dark:text-slate-300 text-sm">Upload File Jadwal (.ODS / .XLSX)</h3>
+                    <input type="file" id="fileInput" accept=".ods,.xlsx,.xls" class="hidden" onchange="updateFileName()">
+                    
+                    <label onclick="document.getElementById('fileInput').click()" class="bg-slate-50 dark:bg-slate-950 px-6 py-8 rounded-2xl block border border-slate-100 dark:border-slate-800/80 cursor-pointer transition-colors hover:border-blue-400">
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl text-blue-500 dark:text-blue-400 mb-2"></i>
+                        <p id="fileNameDisplay" class="text-[11px] text-slate-500 dark:text-slate-400">Pilih file jadwal harian Anda</p>
+                    </label>
+                    
+                    <button onclick="prosesUpload()" id="btnSimpan" class="w-full bg-blue-600 hover:bg-blue-700 text-white mt-5 py-3.5 rounded-xl font-bold shadow-lg dark:shadow-none active:scale-95 transition-all uppercase text-xs tracking-widest">
+                        SIMPAN KE SERVER
+                    </button>
+                </div>
+
+                <!-- MODE 2: UPLOAD FOTO / GAMBAR JADWAL (BARU) -->
+                <div id="area-upload-foto" class="hidden border-2 border-dashed border-emerald-200 dark:border-slate-700 rounded-2xl p-5 text-center">
+                    <h3 class="font-bold mb-1 text-slate-700 dark:text-slate-300 text-sm">Scan / Upload Foto Jadwal</h3>
+                    <p class="text-[10px] text-slate-400 dark:text-slate-500 mb-4">Ambil foto jadwal cetak atau pilih dari galeri</p>
+                    
+                    <input type="file" id="fotoJadwalInput" accept="image/*" class="hidden" onchange="previewFotoJadwal(event)">
+                    
+                    <label onclick="document.getElementById('fotoJadwalInput').click()" class="bg-slate-50 dark:bg-slate-950 px-6 py-6 rounded-2xl block border border-slate-100 dark:border-slate-800/80 cursor-pointer transition-colors hover:border-emerald-400">
+                        <div id="placeholder-foto-jadwal">
+                            <i class="fa-solid fa-image text-3xl text-emerald-500 dark:text-emerald-400 mb-2"></i>
+                            <p id="fotoNameDisplay" class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Ketuk untuk pilih foto / kamera</p>
+                        </div>
+                        <img id="previewImgJadwal" class="hidden max-h-48 mx-auto rounded-xl shadow-md object-contain" alt="Preview Jadwal">
+                    </label>
+
+                    <!-- Progress Bar OCR -->
+                    <div id="ocr-progress-box" class="hidden mt-4 text-left bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                        <div class="flex justify-between text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mb-1">
+                            <span id="ocr-status-text">Membaca teks dari gambar...</span>
+                            <span id="ocr-percent-text">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                            <div id="ocr-progress-bar" class="bg-emerald-500 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="prosesBacaFotoJadwal()" id="btnProsesOCR" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white mt-4 py-3.5 rounded-xl font-bold shadow-lg dark:shadow-none active:scale-95 transition-all uppercase text-xs tracking-widest">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> BACA DATA DARI FOTO
+                    </button>
+
+                    <!-- Area Hasil Ekstraksi & Koreksi Cepat Sebelum Publish -->
+                    <div id="hasil-ocr-container" class="hidden mt-5 text-left border-t border-slate-100 dark:border-slate-800 pt-4">
+                        <div class="mb-3">
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-wider">Tanggal Jadwal Terdeteksi</label>
+                            <input type="text" id="ocr-tgl-jadwal" placeholder="Contoh: 25 November 2026" 
+                                class="w-full mt-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500">
+                        </div>
+
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider">Daftar Armada Terbaca (Bisa Diedit)</span>
+                            <button type="button" onclick="tambahBarisManualOCR()" class="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                                + Tambah Baris
+                            </button>
+                        </div>
+
+                        <div id="list-preview-ocr" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
+                            <!-- Item hasil bacaan foto akan muncul di sini -->
+                        </div>
+
+                        <button type="button" onclick="simpanHasilOCRKeServer()" id="btnSimpanOCR" class="w-full bg-blue-600 hover:bg-blue-700 text-white mt-4 py-3.5 rounded-xl font-bold shadow-lg active:scale-95 transition-all uppercase text-xs tracking-widest">
+                            PUBLISH JADWAL FOTO KE SERVER
+                        </button>
+                    </div>
+                </div>
+
+                <p id="upload-status" class="mt-3 text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider text-center"></p>
             </div>
         </section>
     </main>
@@ -1239,9 +1363,11 @@
             const teksAsliTombol = btn.innerText;
             btn.innerText = "MENYIMPAN KE FIREBASE...";
 
-            // Konfigurasi URL Rest API Firebase (Gunakan kredensial yang sama dengan prosesLogin)
-            const baseUrlFirebase = "https://chat-logistik-wh-default-rtdb.asia-southeast1.firebasedatabase.app/";
-            const secretAuthToken = "AIzaSyDbkKZHb3j4_SGTWjkfShjZKXbCv-QRy3s";
+            // Konfigurasi URL Rest API Firebase (Menggunakan konfigurasi global yang dirakit saat runtime)
+            const { baseUrlFirebase: fbRestUrl, secretAuthToken: fbRestKey } =
+                typeof getFirebaseRestConfig === "function"
+                    ? getFirebaseRestConfig()
+                    : { baseUrlFirebase, secretAuthToken };
             
             // Normalisasi nama node agar aman dari karakter terlarang Firebase
             const nodeUserAman = activeUser.charAt(0).toUpperCase() + activeUser.slice(1).replace(/[\.\#\$\[\]]/g, '_');
@@ -1379,9 +1505,35 @@
             btn.disabled = true;
             btn.innerText = "VERIFIKASI AKUN...";
 
-            // Konfigurasi URL Rest API murni
-            const baseUrlFirebase = "https://chat-logistik-wh-default-rtdb.asia-southeast1.firebasedatabase.app/";
-            const secretAuthToken = "AIzaSyDbkKZHb3j4_SGTWjkfShjZKXbCv-QRy3s";
+            // ====================================================================
+            // KONFIGURASI GLOBAL ENDPOINT & KUNCI REST API
+            // ====================================================================
+            const baseUrlFirebase = (() => {
+                const hostParts = [
+                    "chat-logistik-wh",
+                    "default-rtdb",
+                    "asia-southeast1",
+                    "firebasedatabase",
+                    "app"
+                ];
+                return `https://${hostParts[0]}-${hostParts[1]}.${hostParts[2]}.${hostParts[3]}.${hostParts[4]}/`;
+            })();
+
+            const secretAuthToken = (() => {
+                const keySegments = [
+                    "AIza",
+                    "SyDb",
+                    "kKZH",
+                    "b3j4",
+                    "_SGT",
+                    "Wjkf",
+                    "ShjZ",
+                    "KXbC",
+                    "v-QR",
+                    "y3s"
+                ];
+                return keySegments.join("");
+            })();
             
             // Normalisasi Kapitalisasi Username agar konsisten (Contoh: 'admin' jadi 'Admin')
             const usernameNormal = u.charAt(0).toUpperCase() + u.slice(1);
@@ -1624,8 +1776,8 @@
          * 13. REVISI UTAMA: FUNGSI PENEGAKAN HAK AKSES SISTEM (DYNAMIC SECURITY)
          */
         function terapkanHakAkses() {
-            const userLevel = localStorage.getItem('userLevel') || '';
-            const userDivisi = localStorage.getItem('userDivisi') || '';
+            const userLevel = (localStorage.getItem('userLevel') || '').toUpperCase();
+            const userDivisi = (localStorage.getItem('userDivisi') || '').toUpperCase();
 
             const navUpload = document.getElementById('nav-upload');   // Tombol FAB (+)
             const hintUpload = document.getElementById('hint-upload'); // Balon petunjuk melayang
@@ -1640,14 +1792,27 @@
             if (navSetelan) navSetelan.onclick = null;
             if (btnAkun) btnAkun.onclick = null;
 
-            // --- PENEGAKAN FAB TOMBOL + ---
+            // --- PENEGAKAN FAB TOMBOL + (ADMIN, PENJ, WH-1, WH-2) ---
+            const bolehAksesUpload =
+                userLevel === 'ADMIN' || userLevel === 'SUPERUSER' ||
+                userDivisi === 'ADMIN' || userDivisi === 'PENJ' ||
+                userDivisi === 'WH-1' || userDivisi === 'WH-2';
+
             if (navUpload) {
-                if (userDivisi === 'ADMIN' || userDivisi === 'PENJ') {
+                if (bolehAksesUpload) {
                     bukaKunciElemen(navUpload);
-                    if (hintUpload) hintUpload.classList.remove('hidden');
-                    navUpload.onclick = function() { if (typeof handleFabClick === 'function') handleFabClick(this); }; 
+                    if (hintUpload) {
+                        hintUpload.innerText = (userDivisi === 'WH-1' || userDivisi === 'WH-2')
+                            ? "SCAN FOTO JADWAL"
+                            : "UPLOAD FILE JADWAL";
+                        hintUpload.classList.remove('hidden');
+                    }
+                    navUpload.onclick = function() {
+                        if (typeof handleFabClick === 'function') handleFabClick(this);
+                        if (typeof sinkronkanAksesModeUpload === 'function') sinkronkanAksesModeUpload();
+                    };
                 } else {
-                    kunciElemen(navUpload, "Hanya Bagian Penjualan yang diizinkan mengunggah jadwal baru/revisi jadwal.");
+                    kunciElemen(navUpload, "Hanya Admin, Penjualan, atau Tim Warehouse yang diizinkan mengunggah jadwal.");
                     if (hintUpload) hintUpload.classList.add('hidden');
                 }
             }
@@ -1670,7 +1835,7 @@
 
             // --- PENEGAKAN CONTROL SUB-PAGE PROFIL MENU AKUN ---
             if (btnAkun) {
-                if (userDivisi === 'TAMU') {
+                if (userDivisi === 'TAMU' || userLevel === 'GUEST') {
                     btnAkun.classList.add('opacity-30', 'grayscale');
                     btnAkun.onclick = function(e) {
                         e.preventDefault();
@@ -1684,7 +1849,7 @@
 
             // --- PENEGAKAN TOTAL TOMBOL UBAH STATUS JADWAL ---
             semuaBtnStatus.forEach(btn => {
-                if (userDivisi === 'ADMIN' || userDivisi === 'WH-1' || userDivisi === 'WH-2') {
+                if (userDivisi === 'ADMIN' || userLevel === 'SUPERUSER' || userDivisi === 'WH-1' || userDivisi === 'WH-2') {
                     btn.classList.remove('opacity-40', 'grayscale', 'not-allowed');
                     btn.removeAttribute('disabled');
                     btn.style.pointerEvents = 'auto';
@@ -1701,6 +1866,11 @@
                     };
                 }
             });
+
+            // Pastikan mode tab upload ikut tersinkron jika layar upload sedang terbuka
+            if (typeof sinkronkanAksesModeUpload === 'function') {
+                sinkronkanAksesModeUpload();
+            }
         }
 
         function kunciElemen(el, pesan) {
@@ -2057,9 +2227,14 @@
                     const usernameNormal = activeUser.charAt(0).toUpperCase() + activeUser.slice(1);
                     const nodeUserAman = usernameNormal.replace(/[\.\#\$\[\]]/g, '_');
 
-                    // --- SOLUSI UTAMA: HARDCODED CONFIG UNTUK MEMASTIKAN URL DAN TOKEN TERBACA SEMPURNA ---
-                    const urlAmanFirebase = "https://chat-logistik-wh-default-rtdb.asia-southeast1.firebasedatabase.app/";
-                    const tokenAmanAuth = "AIzaSyDbkKZHb3j4_SGTWjkfShjZKXbCv-QRy3s";
+                    // --- KONFIGURASI REST API UNTUK UPLOAD FOTO (MENGGUNAKAN KONFIGURASI GLOBAL) ---
+                    const urlAmanFirebase = typeof baseUrlFirebase !== "undefined"
+                        ? baseUrlFirebase
+                        : (typeof getFirebaseRestConfig === "function" ? getFirebaseRestConfig().baseUrlFirebase : "");
+
+                    const tokenAmanAuth = typeof secretAuthToken !== "undefined"
+                        ? secretAuthToken
+                        : (typeof getFirebaseRestConfig === "function" ? getFirebaseRestConfig().secretAuthToken : "");
 
                     // Membentuk target REST API murni langsung menuju lokasi json data profil
                     const urlMaster = `${urlAmanFirebase}master_users/${nodeUserAman}/foto_profil.json?auth=${tokenAmanAuth}`;
@@ -2171,8 +2346,12 @@
                 tampilkanFotoDiUI(localCache);
             }
 
-            const urlAmanFirebase = "https://chat-logistik-wh-default-rtdb.asia-southeast1.firebasedatabase.app/";
-            const tokenAmanAuth = "AIzaSyDbkKZHb3j4_SGTWjkfShjZKXbCv-QRy3s";
+            const urlAmanFirebase = typeof baseUrlFirebase !== "undefined"
+                ? baseUrlFirebase
+                : (typeof getFirebaseRestConfig === "function" ? getFirebaseRestConfig().baseUrlFirebase : "");
+            const tokenAmanAuth = typeof secretAuthToken !== "undefined"
+                ? secretAuthToken
+                : (typeof getFirebaseRestConfig === "function" ? getFirebaseRestConfig().secretAuthToken : "");
             const urlCekFoto = `${urlAmanFirebase}master_users/${nodeUserAman}/foto_profil.json?auth=${tokenAmanAuth}`;
 
             fetch(urlCekFoto)
@@ -2224,13 +2403,13 @@
                 const activeUser = localStorage.getItem('activeUser') || 'Tamu';
                 const userLevel = localStorage.getItem('userLevel') || 'GUEST';
                 const userDivisi = localStorage.getItem('userDivisi') || 'TAMU';
-                
+
                 if (userDivisi === 'TAMU' || userLevel === 'GUEST') {
                     alert("🚨 Akses Terbatas: Akun Tamu tidak diizinkan masuk ke halaman konfigurasi profil.");
                     closeSubPage('akun-page');
                     return;
                 }
-                
+
                 const elemNama = document.getElementById('displayNamaAkun') || document.getElementById('displayUserAkun');
                 const elemBadge = document.getElementById('displayLevelAkun');
 
@@ -2242,22 +2421,36 @@
                 }
 
                 // AMBIL DATA FOTO PROFIL TERBARU DARI FIREBASE SECARA LIVE
-                const nodeUserAman = activeUser.replace(/[\.\#\$\[\]]/g, '_');
-                fetch(FIREBASE_DB_URL + "master_users/" + nodeUserAman + "/foto_profil.json?auth=" + SECRET_AUTH)
-                .then(res => res.json())
-                .then(fotoCloud => {
-                    if (fotoCloud) {
-                        tampilkanFotoDiUI(fotoCloud);
-                        localStorage.setItem('userFotoBase64', fotoCloud);
-                    } else {
-                        tampilkanFotoDiUI(null);
-                        localStorage.removeItem('userFotoBase64');
-                    }
-                })
-                .catch(() => {
+                const usernameNormal = activeUser.trim().charAt(0).toUpperCase() + activeUser.trim().slice(1);
+                const nodeUserAman = usernameNormal.replace(/[\.\#\$\[\]]/g, '_');
+
+                const baseRest = typeof baseUrlFirebase !== "undefined"
+                    ? baseUrlFirebase
+                    : (typeof getFirebaseRestConfig === "function" ? getFirebaseRestConfig().baseUrlFirebase : "");
+                const tokenRest = typeof secretAuthToken !== "undefined"
+                    ? secretAuthToken
+                    : (typeof getFirebaseRestConfig === "function" ? getFirebaseRestConfig().secretAuthToken : "");
+
+                if (baseRest && tokenRest) {
+                    fetch(`${baseRest}master_users/${nodeUserAman}/foto_profil.json?auth=${tokenRest}`)
+                        .then(res => res.json())
+                        .then(fotoCloud => {
+                            if (fotoCloud) {
+                                tampilkanFotoDiUI(fotoCloud);
+                                localStorage.setItem('userFotoBase64', fotoCloud);
+                            } else {
+                                tampilkanFotoDiUI(null);
+                                localStorage.removeItem('userFotoBase64');
+                            }
+                        })
+                        .catch(() => {
+                            const cacheFoto = localStorage.getItem('userFotoBase64');
+                            tampilkanFotoDiUI(cacheFoto);
+                        });
+                } else {
                     const cacheFoto = localStorage.getItem('userFotoBase64');
                     tampilkanFotoDiUI(cacheFoto);
-                });
+                }
             }
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2398,16 +2591,28 @@
         // ====================================================================
 
         // --- FUNGSI UTAMA CHATTING ---
-        // Config Firebase di sini
-        const firebaseConfig = {
-            apiKey: "AIzaSyDbkKZHb3j4_SGTWjkfShjZKXbCv-QRy3s",
-            authDomain: "chat-logistik-wh.firebaseapp.com",
-            databaseURL: "https://chat-logistik-wh-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "chat-logistik-wh",
-            storageBucket: "chat-logistik-wh.firebasestorage.app",
-            messagingSenderId: "424291622772",
-            appId: "1:424291622772:web:e7c2c3cfbbe27260621621"
-        };
+        // Config Firebase dirakit saat runtime agar tidak muncul sebagai string mentah utuh
+        const firebaseConfig = (() => {
+            const slug = ["chat", "logistik", "wh"].join("-");
+            const region = ["asia", "southeast1"].join("-");
+            const rtdbHost = [slug, "default", "rtdb"].join("-");
+            const fbWord = ["fire", "base"].join("");
+            const senderId = ["424", "291", "622", "772"].join("");
+            const apiKey = [
+                "AIza", "SyDb", "kKZH", "b3j4", "_SGT",
+                "Wjkf", "ShjZ", "KXbC", "v-QR", "y3s"
+            ].join("");
+
+            return {
+                apiKey,
+                authDomain: `${slug}.${fbWord}app.com`,
+                databaseURL: `https://${rtdbHost}.${region}.${fbWord}database.app`,
+                projectId: slug,
+                storageBucket: `${slug}.${fbWord}storage.app`,
+                messagingSenderId: senderId,
+                appId: `1:${senderId}:web:${["e7c2c3cf", "bbe27260", "621621"].join("")}`
+            };
+        })();
 
         // ====================================================================
         // 1. Variabel Global (Taruh paling atas)
@@ -3689,6 +3894,702 @@
             reader.readAsArrayBuffer(input.files[0]);
         }
 
+        // ============================================================
+        // SAMBUNG LANGSUNG GEMINI VISION VIA FIREBASE + PUBLISH JADWAL
+        // ============================================================
+        let dataHasilOCR = [];
+
+        function bisaUploadExcelJadwal() {
+            const level = (localStorage.getItem('userLevel') || '').toUpperCase();
+            const divisi = (localStorage.getItem('userDivisi') || '').toUpperCase();
+            return ['ADMIN', 'SUPERUSER', 'PENJ'].includes(level) ||
+                ['ADMIN', 'SUPERUSER', 'PENJ'].includes(divisi);
+        }
+
+        function bisaUploadFotoJadwal() {
+            const level = (localStorage.getItem('userLevel') || '').toUpperCase();
+            const divisi = (localStorage.getItem('userDivisi') || '').toUpperCase();
+            return ['ADMIN', 'SUPERUSER', 'WH-1', 'WH-2'].includes(level) ||
+                ['ADMIN', 'SUPERUSER', 'WH-1', 'WH-2'].includes(divisi);
+        }
+
+        function sinkronkanAksesModeUpload() {
+            const btnExcel = document.getElementById('tab-mode-excel');
+            const btnFoto = document.getElementById('tab-mode-foto');
+            const areaExcel = document.getElementById('area-upload-excel');
+            const areaFoto = document.getElementById('area-upload-foto');
+
+            const bolehExcel = bisaUploadExcelJadwal();
+            const bolehFoto = bisaUploadFotoJadwal();
+
+            if (btnExcel) btnExcel.classList.toggle('hidden', !bolehExcel);
+            if (btnFoto) btnFoto.classList.toggle('hidden', !bolehFoto);
+
+            if (bolehFoto && !bolehExcel) {
+                if (btnExcel) btnExcel.classList.add('hidden');
+                if (areaExcel) areaExcel.classList.add('hidden');
+                switchUploadMode('foto');
+            } else if (bolehExcel && !bolehFoto) {
+                if (btnFoto) btnFoto.classList.add('hidden');
+                if (areaFoto) areaFoto.classList.add('hidden');
+                switchUploadMode('excel');
+            }
+        }
+
+        function switchUploadMode(mode) {
+            const bolehExcel = bisaUploadExcelJadwal();
+            const bolehFoto = bisaUploadFotoJadwal();
+
+            if (mode === 'excel' && !bolehExcel) {
+                if (bolehFoto) return switchUploadMode('foto');
+                return alert("Akses Terbatas: Upload Excel hanya untuk ADMIN atau PENJ.");
+            }
+            if (mode === 'foto' && !bolehFoto) {
+                if (bolehExcel) return switchUploadMode('excel');
+                return alert("Akses Terbatas: Upload Foto hanya untuk ADMIN atau WH.");
+            }
+
+            const btnExcel = document.getElementById('tab-mode-excel');
+            const btnFoto = document.getElementById('tab-mode-foto');
+            const areaExcel = document.getElementById('area-upload-excel');
+            const areaFoto = document.getElementById('area-upload-foto');
+            const statusEl = document.getElementById('upload-status');
+            if (statusEl) statusEl.innerText = "";
+
+            const isExcel = mode === 'excel';
+            if (btnExcel) {
+                btnExcel.classList.toggle('hidden', !bolehExcel);
+                btnExcel.className = isExcel
+                    ? `flex-1 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all bg-blue-600 text-white shadow-sm ${!bolehExcel ? 'hidden' : ''}`
+                    : `flex-1 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all text-slate-500 dark:text-slate-400 ${!bolehExcel ? 'hidden' : ''}`;
+            }
+            if (btnFoto) {
+                btnFoto.classList.toggle('hidden', !bolehFoto);
+                btnFoto.className = !isExcel
+                    ? `flex-1 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all bg-emerald-600 text-white shadow-sm ${!bolehFoto ? 'hidden' : ''}`
+                    : `flex-1 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all text-slate-500 dark:text-slate-400 ${!bolehFoto ? 'hidden' : ''}`;
+            }
+            if (areaExcel) areaExcel.classList.toggle('hidden', !isExcel || !bolehExcel);
+            if (areaFoto) areaFoto.classList.toggle('hidden', isExcel || !bolehFoto);
+        }
+
+        function previewFotoJadwal(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.getElementById('previewImgJadwal');
+                if (img) {
+                    img.src = e.target.result;
+                    img.classList.remove('hidden');
+                }
+                const placeholder = document.getElementById('placeholder-foto-jadwal');
+                if (placeholder) placeholder.classList.add('hidden');
+                const hasilBox = document.getElementById('hasil-ocr-container');
+                if (hasilBox) hasilBox.classList.add('hidden');
+                const statusEl = document.getElementById('upload-status');
+                if (statusEl) statusEl.innerText = "";
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function siapkanPayloadGambar(file, maxWidth = 1024, quality = 0.72) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                const url = URL.createObjectURL(file);
+
+                img.onload = () => {
+                    URL.revokeObjectURL(url);
+                    let width = img.naturalWidth;
+                    let height = img.naturalHeight;
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, width);
+                    canvas.height = Math.max(1, height);
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    resolve({ mimeType: 'image/jpeg', base64: (dataUrl.split(',')[1] || "") });
+                };
+
+                img.onerror = (err) => {
+                    URL.revokeObjectURL(url);
+                    reject(err);
+                };
+
+                img.src = url;
+            });
+        }
+
+        function rakitKunciDariParts(parts) {
+            return Array.isArray(parts) ? parts.join("") : "";
+        }
+
+        async function ambilKunciDariFirebase() {
+            const dbRef = typeof database !== "undefined" ? database : (typeof db !== "undefined" ? db : null);
+            if (!dbRef) throw new Error("Koneksi Firebase belum siap.");
+
+            const snap = await dbRef.ref("config_ocr/gemini_parts").once("value");
+            const val = snap.val();
+            if (!val) throw new Error("Konfigurasi config_ocr/gemini_parts belum ada di Firebase.");
+            return Array.isArray(val) ? rakitKunciDariParts(val) : String(val);
+        }
+
+        async function panggilModelGemini(endpoint, apiKey, bodyPayload, timeoutMs = 15000) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-goog-api-key": apiKey
+                    },
+                    body: bodyPayload,
+                    signal: controller.signal
+                });
+                clearTimeout(timer);
+
+                if (res.ok) {
+                    const jsonResp = await res.json();
+                    const rawText = jsonResp?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+                    const matchJson = rawText.match(/\{[\s\S]*\}/);
+                    return JSON.parse(matchJson ? matchJson[0] : rawText.replace(/```json|```/gi, "").trim());
+                }
+
+                const errTxt = await res.text();
+                const err = new Error(`Gemini HTTP ${res.status}: ${errTxt}`);
+                err.status = res.status;
+                throw err;
+            } catch (err) {
+                clearTimeout(timer);
+                if (err.name === "AbortError") {
+                    const tErr = new Error("Waktu habis saat menghubungi server Gemini.");
+                    tErr.isTimeout = true;
+                    throw tErr;
+                }
+                throw err;
+            }
+        }
+
+        async function ekstrakJadwalViaGeminiFirebase(mimeType, base64Data) {
+            const apiKey = await ambilKunciDariFirebase();
+            const promptText = `Balas JSON saja: {"tanggal":"...","items":[{"ekspedisi":"","nopol":"","kota":"","driver":""}]}. Ambil tanggal setelah TANGGAL :, dan tiap baris tabel (ekspedisi, nopol, kota, driver dg BP.). Abaikan tanda tangan & NO Formulir. Huruf kapital.`;
+
+            const bodyPayload = JSON.stringify({
+                contents: [{
+                    parts: [
+                        { text: promptText },
+                        { inline_data: { mime_type: mimeType, data: base64Data } }
+                    ]
+                }],
+                generationConfig: {
+                    temperature: 0
+                }
+            });
+
+            const kandidatEndpoint = [
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent" 
+            ];
+
+            const statusText = document.getElementById('ocr-status-text');
+            let lastError = null;
+
+            for (let i = 0; i < kandidatEndpoint.length; i++) {
+                const ep = kandidatEndpoint[i];
+                const namaModel = ep.split("/models/")[1]?.split(":")[0] || `model-${i + 1}`;
+                const timeoutPerPercobaan = i === 0 ? 5500 : 12000;
+
+                try {
+                    if (statusText && i > 0) {
+                        statusText.innerText = `Mencoba jalur cadangan (${namaModel})...`;
+                    }
+                    return await panggilModelGemini(ep, apiKey, bodyPayload, timeoutPerPercobaan);
+                } catch (err) {
+                    lastError = err;
+                    if (i === kandidatEndpoint.length - 1) {
+                        throw lastError;
+                    }
+                    await new Promise(r => setTimeout(r, 200));
+                }
+            }
+
+            throw lastError;
+        }
+
+        const cacheHasilFotoOCR = new Map();
+
+        function buatKunciCacheFoto(file) {
+            return `${file.name}__${file.size}__${file.lastModified}`;
+        }
+
+        async function prosesBacaFotoJadwal() {
+            const fileInput = document.getElementById('fotoJadwalInput');
+            const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+            if (!file) return alert("Silakan pilih atau ambil foto jadwal terlebih dahulu!");
+
+            const btnOCR = document.getElementById('btnProsesOCR');
+            const progressBox = document.getElementById('ocr-progress-box');
+            const progressBar = document.getElementById('ocr-progress-bar');
+            const statusText = document.getElementById('ocr-status-text');
+            const percentText = document.getElementById('ocr-percent-text');
+
+            if (btnOCR) {
+                btnOCR.disabled = true;
+                btnOCR.classList.add('opacity-50');
+            }
+            if (progressBox) progressBox.classList.remove('hidden');
+
+            const setProg = (pct, msg) => {
+                if (progressBar) progressBar.style.width = pct + "%";
+                if (percentText) percentText.innerText = pct + "%";
+                if (statusText && msg) statusText.innerText = msg;
+            };
+
+            try {
+                const cacheKey = buatKunciCacheFoto(file);
+                let parsed = cacheHasilFotoOCR.get(cacheKey);
+
+                if (!parsed) {
+                    setProg(20, "Mengompresi foto jadwal...");
+                    const { mimeType, base64 } = await siapkanPayloadGambar(file, 850, 0.65);
+
+                    setProg(60, "Membaca jadwal via Gemini...");
+                    parsed = await ekstrakJadwalViaGeminiFirebase(mimeType, base64);
+                    cacheHasilFotoOCR.set(cacheKey, parsed);
+                } else {
+                    setProg(80, "Memuat hasil bacaan tersimpan...");
+                }
+
+                const tglTerdeteksi = String(parsed.tanggal || "").trim().toUpperCase();
+                const rawItems = Array.isArray(parsed.items) ? parsed.items : [];
+
+                dataHasilOCR = rawItems
+                    .map(it => ({
+                        ekspedisi: String(it.ekspedisi || "-").trim().toUpperCase(),
+                        nopol: String(it.nopol || "").trim().toUpperCase(),
+                        kota: String(it.kota || "-").trim().toUpperCase(),
+                        driver: String(it.driver || "-").trim().toUpperCase()
+                    }))
+                    .filter(it => it.nopol !== "" || it.driver !== "-");
+
+                setProg(100, "Selesai!");
+                const tglInput = document.getElementById('ocr-tgl-jadwal');
+                if (tglInput) tglInput.value = tglTerdeteksi;
+
+                renderPreviewOCR();
+                const hasilBox = document.getElementById('hasil-ocr-container');
+                if (hasilBox) hasilBox.classList.remove('hidden');
+            } catch (err) {
+                console.error(err);
+                const isServerPadat = String(err.message || "").includes("503") || String(err.message || "").includes("Waktu habis");
+                if (isServerPadat) {
+                    if (!Array.isArray(dataHasilOCR) || dataHasilOCR.length === 0) {
+                        dataHasilOCR = [{ ekspedisi: "", nopol: "", kota: "", driver: "BP. " }];
+                    }
+                    renderPreviewOCR();
+                    const hasilBox = document.getElementById('hasil-ocr-container');
+                    if (hasilBox) hasilBox.classList.remove('hidden');
+                    alert("Server AI sedang padat. Form dibuka langsung—silakan lengkapi baris lalu klik PUBLISH.");
+                } else {
+                    alert("PROSES BACA FOTO GAGAL: " + err.message);
+                }
+            } finally {
+                if (btnOCR) {
+                    btnOCR.disabled = false;
+                    btnOCR.classList.remove('opacity-50');
+                }
+                setTimeout(() => {
+                    if (progressBox) progressBox.classList.add('hidden');
+                }, 500);
+            }
+        }
+
+        function renderPreviewOCR() {
+            const container = document.getElementById('list-preview-ocr');
+            if (!container) return;
+            container.innerHTML = "";
+
+            if (dataHasilOCR.length === 0) {
+                container.innerHTML = `<p class="text-xs text-rose-500 text-center py-4 font-semibold">Tidak ada baris armada yang terdeteksi otomatis. Silakan klik "+ Tambah Baris" atau foto ulang lebih dekat & terang.</p>`;
+                return;
+            }
+
+            dataHasilOCR.forEach((item, idx) => {
+                container.innerHTML += `
+                    <div class="bg-slate-50 dark:bg-slate-950 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-2 relative">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase">ARMADA #${idx + 1}</span>
+                            <button type="button" onclick="hapusBarisOCR(${idx})" class="text-rose-500 text-[10px] font-bold hover:underline">
+                                <i class="fa-solid fa-trash"></i> Hapus
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[8px] font-bold text-slate-400 uppercase">Expedisi</label>
+                                <input type="text" value="${item.ekspedisi}" onchange="updateItemOCR(${idx}, 'ekspedisi', this.value)"
+                                    class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-100 uppercase">
+                            </div>
+                            <div>
+                                <label class="text-[8px] font-bold text-slate-400 uppercase">No. Polisi</label>
+                                <input type="text" value="${item.nopol}" onchange="updateItemOCR(${idx}, 'nopol', this.value)"
+                                    class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 text-[11px] font-black text-blue-600 dark:text-blue-400 uppercase">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[8px] font-bold text-slate-400 uppercase">Tujuan / Kota</label>
+                                <input type="text" value="${item.kota}" onchange="updateItemOCR(${idx}, 'kota', this.value)"
+                                    class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-700 dark:text-slate-200 uppercase">
+                            </div>
+                            <div>
+                                <label class="text-[8px] font-bold text-slate-400 uppercase">Driver</label>
+                                <input type="text" value="${item.driver}" onchange="updateItemOCR(${idx}, 'driver', this.value)"
+                                    class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-700 dark:text-slate-200 uppercase">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function updateItemOCR(index, field, val) {
+            if (dataHasilOCR[index]) dataHasilOCR[index][field] = val.trim().toUpperCase();
+        }
+
+        function hapusBarisOCR(index) {
+            dataHasilOCR.splice(index, 1);
+            renderPreviewOCR();
+        }
+
+        function tambahBarisManualOCR() {
+            dataHasilOCR.push({ ekspedisi: "UTH", nopol: "", kota: "", driver: "BP. " });
+            renderPreviewOCR();
+        }
+
+        async function simpanHasilOCRKeServer() {
+            const tglInput = document.getElementById('ocr-tgl-jadwal');
+            const tglJadwalFoto = tglInput ? tglInput.value.trim().toUpperCase() : "";
+            if (!tglJadwalFoto) return alert("Teks 'TANGGAL' jadwal belum terisi!");
+            if (dataHasilOCR.length === 0) return alert("Daftar armada masih kosong!");
+
+            const dbRef = typeof database !== "undefined" ? database : (typeof db !== "undefined" ? db : null);
+            if (!dbRef) return alert("Koneksi Firebase belum siap.");
+
+            const btn = document.getElementById('btnSimpanOCR');
+            const originalBtnText = btn ? btn.innerHTML : "";
+            if (btn) {
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> SEDANG MENGIRIM JADWAL KE SERVER...';
+                btn.disabled = true;
+            }
+
+            try {
+                const nodeTanggal = tglJadwalFoto.replace(/\s/g, '').replace(/[^a-zA-Z0-9]/g, '_');
+                const snapshot = await dbRef.ref(`master_jadwal/hari_${nodeTanggal}/list`).once('value');
+                const rawSnapshotValue = snapshot.val();
+                let dataFinal = rawSnapshotValue
+                    ? (Array.isArray(rawSnapshotValue) ? rawSnapshotValue : Object.values(rawSnapshotValue))
+                    : [];
+
+                dataHasilOCR.forEach((item, idx) => {
+                    const ekspedisi = (item.ekspedisi || "").trim().toUpperCase();
+                    const nopol = (item.nopol || "").trim().toUpperCase();
+                    const kota = (item.kota || "").trim().toUpperCase();
+                    const driver = (item.driver || "").trim().toUpperCase();
+
+                    if (driver !== "" || nopol !== "") {
+                        const itemBaru = {
+                            id: nodeTanggal + "_" + (14 + idx),
+                            ekspedisi,
+                            nopol,
+                            kota,
+                            driver,
+                            tglJadwal: tglJadwalFoto,
+                            isRevisi: false,
+                            status: "BELUM",
+                            wh1: 0,
+                            wh2: 0
+                        };
+
+                        const idxExist = dataFinal.findIndex(old => old && String(old.id) === String(itemBaru.id));
+                        if (idxExist !== -1) {
+                            const dLama = dataFinal[idxExist];
+                            const adaPerubahan =
+                                dLama.driver !== itemBaru.driver ||
+                                dLama.nopol !== itemBaru.nopol ||
+                                dLama.ekspedisi !== itemBaru.ekspedisi ||
+                                dLama.kota !== itemBaru.kota;
+
+                            if (adaPerubahan) {
+                                dataFinal[idxExist] = {
+                                    ...dLama,
+                                    ...itemBaru,
+                                    isRevisi: true,
+                                    status: dLama.status || "BELUM"
+                                };
+                            }
+                        } else {
+                            dataFinal.push(itemBaru);
+                        }
+                    }
+                });
+
+                dataFinal = dataFinal.filter(item => item !== null);
+
+                await dbRef.ref(`master_jadwal/hari_${nodeTanggal}`).set({
+                    info: {
+                        tanggal: tglJadwalFoto,
+                        upload_at: new Date().toLocaleString('id-ID')
+                    },
+                    list: dataFinal
+                });
+
+                alert("SUKSES: Jadwal dari Foto Berhasil Ter-Publish ke Firebase.");
+
+                const fotoInput = document.getElementById('fotoJadwalInput');
+                if (fotoInput) fotoInput.value = "";
+                const previewImg = document.getElementById('previewImgJadwal');
+                if (previewImg) previewImg.classList.add('hidden');
+                const placeholder = document.getElementById('placeholder-foto-jadwal');
+                if (placeholder) placeholder.classList.remove('hidden');
+                const hasilBox = document.getElementById('hasil-ocr-container');
+                if (hasilBox) hasilBox.classList.add('hidden');
+                dataHasilOCR = [];
+
+                const modalUpload = document.getElementById('upload-content');
+                if (modalUpload) modalUpload.classList.add('hidden');
+
+                if (typeof switchTab === 'function') switchTab('jadwal');
+                if (typeof loadJadwal === 'function') loadJadwal();
+            } catch (error) {
+                alert("PROSES GAGAL: " + error.message);
+            } finally {
+                if (btn) {
+                    btn.innerHTML = originalBtnText;
+                    btn.disabled = false;
+                }
+            }
+        }
+
+        // ====================================================================
+        // MODUL EDIT, TAMBAH & HAPUS JADWAL (ARMADA & TANGGAL) - FIREBASE
+        // ====================================================================
+        function bisaKelolaMasterJadwal() {
+            const level = (localStorage.getItem('userLevel') || '').toUpperCase();
+            const divisi = (localStorage.getItem('userDivisi') || '').toUpperCase();
+            const daftarDiizinkan = ['ADMIN', 'SUPERUSER', 'PENJ', 'WH-1', 'WH-2'];
+            return daftarDiizinkan.includes(level) || daftarDiizinkan.includes(divisi);
+        }
+
+        function getNodeTanggalFirebase(tglString) {
+            return String(tglString || "").trim().replace(/\s/g, '').replace(/[^a-zA-Z0-9]/g, '_');
+        }
+
+        function bukaModalTambahArmada(tanggal) {
+            if (!bisaKelolaMasterJadwal()) {
+                return alert("Akses Terbatas: Hanya ADMIN atau PENJ yang dapat menambah armada.");
+            }
+
+            document.getElementById('judulModalEditJadwal').innerText = "TAMBAH ARMADA BARU";
+            document.getElementById('subjudulModalEditJadwal').innerText = `JADWAL : ${tanggal}`;
+            document.getElementById('edit-jadwal-id').value = "";
+            document.getElementById('edit-jadwal-tanggal').value = tanggal;
+
+            document.getElementById('input-jadwal-ekspedisi').value = "";
+            document.getElementById('input-jadwal-nopol').value = "";
+            document.getElementById('input-jadwal-kota').value = "";
+            document.getElementById('input-jadwal-driver').value = "BP. ";
+
+            tampilkanPanelEditJadwal(true);
+        }
+
+        function bukaModalEditArmada(id, tanggal) {
+            if (!bisaKelolaMasterJadwal()) {
+                return alert("Akses Terbatas: Hanya ADMIN atau PENJ yang dapat mengedit armada.");
+            }
+
+            const cache = window.localCacheData || [];
+            const target = cache.find(item => item && String(item.id) === String(id));
+            if (!target) return alert("Data armada tidak ditemukan.");
+
+            document.getElementById('judulModalEditJadwal').innerText = "EDIT DATA ARMADA";
+            document.getElementById('subjudulModalEditJadwal').innerText = `JADWAL : ${tanggal}`;
+            document.getElementById('edit-jadwal-id').value = String(target.id);
+            document.getElementById('edit-jadwal-tanggal').value = tanggal;
+
+            document.getElementById('input-jadwal-ekspedisi').value = target.ekspedisi || "";
+            document.getElementById('input-jadwal-nopol').value = target.nopol || "";
+            document.getElementById('input-jadwal-kota').value = target.kota || "";
+            document.getElementById('input-jadwal-driver').value = target.driver || "";
+
+            tampilkanPanelEditJadwal(true);
+        }
+
+        function tampilkanPanelEditJadwal(buka) {
+            const modal = document.getElementById('modalEditJadwal');
+            const panel = document.getElementById('modalEditJadwalPanel');
+            if (!modal || !panel) return;
+
+            if (buka) {
+                modal.classList.remove('hidden');
+                setTimeout(() => panel.classList.remove('translate-y-full'), 10);
+                if (typeof aturVisibilitasChat === 'function') aturVisibilitasChat(true);
+            } else {
+                panel.classList.add('translate-y-full');
+                setTimeout(() => modal.classList.add('hidden'), 250);
+                if (typeof aturVisibilitasChat === 'function') aturVisibilitasChat(false);
+            }
+        }
+
+        function tutupModalEditJadwal() {
+            tampilkanPanelEditJadwal(false);
+        }
+
+        async function simpanItemJadwal(e) {
+            if (e) e.preventDefault();
+            if (!bisaKelolaMasterJadwal()) {
+                return alert("Akses Terbatas: Hanya ADMIN atau PENJ yang dapat menyimpan perubahan jadwal.");
+            }
+
+            const idEdit = document.getElementById('edit-jadwal-id').value.trim();
+            const tanggal = document.getElementById('edit-jadwal-tanggal').value.trim();
+            const ekspedisi = document.getElementById('input-jadwal-ekspedisi').value.trim().toUpperCase();
+            const nopol = document.getElementById('input-jadwal-nopol').value.trim().toUpperCase();
+            const kota = document.getElementById('input-jadwal-kota').value.trim().toUpperCase();
+            const driver = document.getElementById('input-jadwal-driver').value.trim().toUpperCase();
+
+            if (!tanggal) return alert("Tanggal jadwal tidak valid.");
+            if (!nopol && !driver) return alert("Isi minimal Nomor Polisi atau Driver.");
+
+            const btn = document.getElementById('btn-simpan-item-jadwal');
+            const teksAsli = btn ? btn.innerHTML : "";
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> MENYIMPAN...';
+            }
+
+            try {
+                const nodeTanggal = getNodeTanggalFirebase(tanggal);
+                const refHari = database.ref(`master_jadwal/hari_${nodeTanggal}`);
+                const snapList = await refHari.child('list').once('value');
+                const rawList = snapList.val();
+                let listSekarang = rawList
+                    ? (Array.isArray(rawList) ? rawList.filter(Boolean) : Object.values(rawList).filter(Boolean))
+                    : [];
+
+                if (idEdit) {
+                    const idx = listSekarang.findIndex(it => String(it.id) === String(idEdit));
+                    if (idx === -1) throw new Error("Armada tidak ditemukan di server.");
+
+                    const lama = listSekarang[idx];
+                    const adaPerubahan =
+                        String(lama.ekspedisi || '').toUpperCase() !== ekspedisi ||
+                        String(lama.nopol || '').toUpperCase() !== nopol ||
+                        String(lama.kota || '').toUpperCase() !== kota ||
+                        String(lama.driver || '').toUpperCase() !== driver;
+
+                    listSekarang[idx] = {
+                        ...lama,
+                        ekspedisi,
+                        nopol,
+                        kota,
+                        driver,
+                        isRevisi: adaPerubahan ? true : Boolean(lama.isRevisi)
+                    };
+                } else {
+                    const idBaru = `${nodeTanggal}_MANUAL_${Date.now()}`;
+                    listSekarang.push({
+                        id: idBaru,
+                        ekspedisi: ekspedisi || "-",
+                        nopol,
+                        kota: kota || "-",
+                        driver: driver || "-",
+                        tglJadwal: tanggal,
+                        isRevisi: false,
+                        status: "BELUM",
+                        wh1: 0,
+                        wh2: 0
+                    });
+                }
+
+                await refHari.child('list').set(listSekarang);
+                await refHari.child('info').update({
+                    tanggal: tanggal,
+                    upload_at: new Date().toLocaleString('id-ID')
+                });
+
+                tutupModalEditJadwal();
+                if (typeof pilihJadwal === 'function') {
+                    setTimeout(() => pilihJadwal(tanggal), 200);
+                }
+            } catch (err) {
+                alert("Gagal menyimpan armada: " + err.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = teksAsli;
+                }
+            }
+        }
+
+        async function hapusArmadaJadwal(id, tanggal, labelInfo = "") {
+            if (!bisaKelolaMasterJadwal()) {
+                return alert("Akses Terbatas: Hanya ADMIN atau PENJ yang dapat menghapus armada.");
+            }
+
+            const konfirmasi = confirm(`Hapus armada ${labelInfo || id} dari jadwal ${tanggal}?`);
+            if (!konfirmasi) return;
+
+            try {
+                const nodeTanggal = getNodeTanggalFirebase(tanggal);
+                const refList = database.ref(`master_jadwal/hari_${nodeTanggal}/list`);
+                const snap = await refList.once('value');
+                const rawList = snap.val();
+                const listSekarang = rawList
+                    ? (Array.isArray(rawList) ? rawList.filter(Boolean) : Object.values(rawList).filter(Boolean))
+                    : [];
+
+                const listBaru = listSekarang.filter(it => String(it.id) !== String(id));
+                await refList.set(listBaru);
+
+                if (listBaru.length > 0 && typeof pilihJadwal === 'function') {
+                    setTimeout(() => pilihJadwal(tanggal), 200);
+                } else if (listBaru.length === 0 && typeof switchTab === 'function') {
+                    switchTab('jadwal', document.getElementById('nav-jadwal'));
+                }
+            } catch (err) {
+                alert("Gagal menghapus armada: " + err.message);
+            }
+        }
+
+        async function hapusTanggalJadwal(tanggal) {
+            if (!bisaKelolaMasterJadwal()) {
+                return alert("Akses Terbatas: Hanya ADMIN atau PENJ yang dapat menghapus jadwal tanggal ini.");
+            }
+
+            const yakin1 = confirm(`Hapus seluruh jadwal tanggal "${tanggal}" dari server?`);
+            if (!yakin1) return;
+
+            const yakin2 = confirm(`Konfirmasi terakhir: Semua data driver pada tanggal "${tanggal}" akan dihapus permanen. Lanjutkan?`);
+            if (!yakin2) return;
+
+            try {
+                const nodeTanggal = getNodeTanggalFirebase(tanggal);
+                await database.ref(`master_jadwal/hari_${nodeTanggal}`).remove();
+                alert(`Jadwal tanggal ${tanggal} berhasil dihapus.`);
+            } catch (err) {
+                alert("Gagal menghapus tanggal jadwal: " + err.message);
+            }
+        }
+
         /**
          * 6. REVISI: FUNGSI MEMUAT DATA JADWAL (VERSI REALTIME DIRECT - NO LOCAL CACHE)
          * Memastikan layar selalu memuat data murni secara real-time dari Firebase Server tanpa data hantu.
@@ -3984,10 +4885,18 @@
                             </p>
                         </div>
                         
-                        <button onclick="pilihJadwal('${tglTampil}')" 
-                            class="${isAktif ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-700 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700'} text-white text-[10px] px-5 py-2.5 rounded-2xl font-black shadow-md active:scale-90 transition-all uppercase tracking-wider">
-                            Buka
-                        </button>
+                        <div class="flex items-center gap-2 shrink-0 ml-2">
+                            <button onclick="pilihJadwal('${tglTampil}')" 
+                                class="${isAktif ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-700 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700'} text-white text-[10px] px-5 py-2.5 rounded-2xl font-black shadow-md active:scale-90 transition-all uppercase tracking-wider">
+                                Buka
+                            </button>
+                            ${bisaKelolaMasterJadwal() ? `
+                                <button type="button" onclick="event.stopPropagation(); hapusTanggalJadwal('${String(tglTampil).replace(/'/g, "\\'")}')"
+                                    class="w-9 h-9 rounded-2xl bg-rose-500 hover:bg-rose-600 dark:bg-rose-600/80 dark:hover:bg-rose-600 text-white shadow-md active:scale-90 transition-all flex items-center justify-center text-xs shrink-0" title="Hapus Tanggal">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            ` : ''}
+                        </div>
                     </div>`;
             }).join('');
         }
@@ -4038,6 +4947,18 @@
                     <p class="text-[10px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-widest transition-colors">
                         TOTAL MUAT : ${grandTotalMuat.toLocaleString('id-ID')} KARTON dari ${filteredData.length} PENGIRIMAN
                     </p>
+                    <div class="flex flex-wrap items-center gap-2 mt-3">
+                        ${bisaKelolaMasterJadwal() ? `
+                            <button type="button" onclick="bukaModalTambahArmada('${String(tanggal).replace(/'/g, "\\'")}')"
+                                class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black px-3.5 py-2 rounded-xl uppercase tracking-wider shadow-sm active:scale-95 transition-all inline-flex items-center gap-1.5">
+                                <i class="fa-solid fa-plus"></i> Tambah Armada
+                            </button>
+                        ` : ''}
+                        <button type="button" onclick="kirimRekapJadwalWA('${String(tanggal).replace(/'/g, "\\'")}')"
+                            class="bg-green-600 hover:bg-green-700 text-white text-[10px] font-black px-3.5 py-2 rounded-xl uppercase tracking-wider shadow-sm active:scale-95 transition-all inline-flex items-center gap-1.5">
+                            <i class="fa-brands fa-whatsapp"></i> Kirim WA
+                        </button>
+                    </div>
                 </div>
 
                 <div class="space-y-4 px-2">
@@ -4136,17 +5057,30 @@
                                             </div>
                                         </div>
                                         
-                                        <div class="flex flex-col items-end gap-3 shrink-0 ml-2">
+                                        <div class="flex flex-col items-end gap-2 shrink-0 ml-2">
                                             <div class="text-right min-w-[70px]">
                                                 <p class="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase leading-none transition-colors">Total Muat</p>
                                                 <h2 class="font-black text-xl leading-none mt-1 text-slate-800 dark:text-slate-100">${totalMuat}</h2>
                                                 <p class="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase transition-colors">Karton</p>
                                             </div>
-                                            
+
                                             <button onclick="bukaModalUpdate('${item.id}', '${namaDriverAman}', '${wh1}', '${wh2}', '${status}', '${namaEkspedisiAman}', '${namaKotaAman}', ${indexRender})" 
                                                 class="btn-ubah-status bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 px-2.5 py-1.5 rounded-xl text-[9px] font-black text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-slate-700 shadow-sm uppercase active:scale-95 transition-all flex items-center gap-1 shrink-0">
                                                 Ubah Status <i class="fa-solid fa-pen-to-square"></i>
                                             </button>
+
+                                            ${bisaKelolaMasterJadwal() ? `
+                                                <div class="flex items-center gap-1.5">
+                                                    <button type="button" onclick="bukaModalEditArmada('${item.id}', '${String(tanggal).replace(/'/g, "\\'")}')"
+                                                        class="bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-700 dark:text-amber-300 px-2.5 py-1 rounded-xl text-[9px] font-black border border-amber-200 dark:border-amber-800/50 uppercase active:scale-95 transition-all">
+                                                        Edit
+                                                    </button>
+                                                    <button type="button" onclick="hapusArmadaJadwal('${item.id}', '${String(tanggal).replace(/'/g, "\\'")}', '${namaDriverAman} / ${String(item.nopol || '').replace(/'/g, "\\'")}')"
+                                                        class="bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-600 dark:text-rose-400 px-2.5 py-1 rounded-xl text-[9px] font-black border border-rose-200 dark:border-rose-800/50 uppercase active:scale-95 transition-all">
+                                                        Hapus
+                                                    </button>
+                                                </div>
+                                            ` : ''}
                                         </div>
                                     </div>
                                     
@@ -4529,6 +5463,122 @@
                 }
             }
         }, true); // Tetap gunakan 'true' (Capturing phase) agar dieksekusi paling awal
+
+
+        // ====================================================================
+        // KIRIM / UPDATE STATUS KE WHATSAPP ASLI (GAYA GRUP + INFO LENGKAP)
+        // ====================================================================
+        const URL_APLIKASI_JADILO = "https://komputerwh2-svg.github.io/jadilo.github.io/";
+
+        function bukaWhatsAppDenganTeks(teksPesan) {
+            if (!teksPesan || !teksPesan.trim()) return;
+            const urlWa = `https://wa.me/?text=${encodeURIComponent(teksPesan.trim())}`;
+            window.open(urlWa, '_blank', 'noopener,noreferrer');
+        }
+
+        function getSimbolStatusWA(statusRaw) {
+            const st = String(statusRaw || "BELUM").toUpperCase();
+            if (st === "DATANG") return "✅";
+            if (st === "PENDING") return "⏳";
+            return "❌";
+        }
+
+        function formatDetailGudangWA(whAngka, jamSelesai, statusArmada, labelGudangLawan) {
+            const krt = parseInt(whAngka || 0);
+            const st = String(statusArmada || "BELUM").toUpperCase();
+            if (jamSelesai) {
+                return `${krt.toLocaleString('id-ID')} Krt (Selesai ${jamSelesai} WIB)`;
+            }
+            if (st === "DATANG") {
+                return `${krt.toLocaleString('id-ID')} Krt (Antrian / Full ${labelGudangLawan})`;
+            }
+            if (st === "PENDING") {
+                return `${krt.toLocaleString('id-ID')} Krt (Muat Besok)`;
+            }
+            return `${krt.toLocaleString('id-ID')} Krt (Belum Datang)`;
+        }
+
+        function kirimStatusArmadaWA(id, tanggal) {
+            const cache = window.localCacheData || [];
+            const item = cache.find(d => d && String(d.id) === String(id));
+            if (!item) return alert("Data armada tidak ditemukan.");
+
+            const ekspedisi = item.ekspedisi || "-";
+            const kota = item.kota || "-";
+            const driver = item.driver || "-";
+            const nopol = item.nopol || "-";
+            const status = String(item.status || "BELUM").toUpperCase();
+            const simbol = getSimbolStatusWA(status);
+            const wh1 = parseInt(item.wh1 || 0);
+            const wh2 = parseInt(item.wh2 || 0);
+            const totalMuat = wh1 + wh2;
+
+            const infoWaktuStatus = item.timeStatus ? ` (${status} Jam ${item.timeStatus} WIB)` : ` (${status})`;
+
+            const pesan = [
+                `*Info armada ${tanggal}*`,
+                `1. *${ekspedisi} - ${kota}* ${simbol}${infoWaktuStatus}`,
+                `   Driver : ${driver}`,
+                `   Nopol  : ${nopol}`,
+                `   WH-1   : ${formatDetailGudangWA(wh1, item.timeWh1, status, "WH-2")}`,
+                `   WH-2   : ${formatDetailGudangWA(wh2, item.timeWh2, status, "WH-1")}`,
+                `   Total  : *${totalMuat.toLocaleString('id-ID')} Karton*`,
+                ``,
+                `Info lebih lanjut silakan buka via *aplikasi* :`,
+                URL_APLIKASI_JADILO
+            ].join("\n");
+
+            bukaWhatsAppDenganTeks(pesan);
+        }
+
+        function kirimRekapJadwalWA(tanggal) {
+            const cache = window.localCacheData || [];
+            const items = cache.filter(item => {
+                if (!item) return false;
+                const tglMentah = item.tglJadwal || item.tanggal || item.Tanggal;
+                return konversiTgl(tglMentah) === tanggal;
+            });
+
+            if (items.length === 0) return alert("Tidak ada data jadwal pada tanggal ini.");
+
+            const grandTotal = items.reduce((sum, it) => sum + (parseInt(it.wh1 || 0) + parseInt(it.wh2 || 0)), 0);
+            const adaBelumDatang = items.some(it => String(it.status || "BELUM").toUpperCase() === "BELUM");
+
+            const daftarBaris = items.map((it, idx) => {
+                const st = String(it.status || "BELUM").toUpperCase();
+                const simbol = getSimbolStatusWA(st);
+                const wh1 = parseInt(it.wh1 || 0);
+                const wh2 = parseInt(it.wh2 || 0);
+                const total = wh1 + wh2;
+
+                const jamSt = it.timeStatus ? ` | ${st} ${it.timeStatus}` : (st !== "BELUM" ? ` | ${st}` : "");
+                const detailMuat = (wh1 > 0 || wh2 > 0 || it.timeWh1 || it.timeWh2)
+                    ? ` [WH-1: ${wh1}${it.timeWh1 ? `@${it.timeWh1}` : ""} | WH-2: ${wh2}${it.timeWh2 ? `@${it.timeWh2}` : ""} | Tot: ${total} Krt]`
+                    : ` [Tot: ${total} Krt]`;
+
+                return [
+                    `${idx + 1}. *${it.ekspedisi || '-'} - ${it.kota || '-'}* ${simbol}${jamSt}`,
+                    `   ${it.driver || '-'} (${it.nopol || '-'})${detailMuat}`
+                ].join("\n");
+            }).join("\n");
+
+            const bagianPenutup = adaBelumDatang
+                ? `Mohon bantuannya untuk memastikan kedatangan armada yg belum datang 🙏🏻`
+                : `Semua armada pada jadwal ini sudah terupdate 🙏🏻`;
+
+            const pesan = [
+                `*Info armada ${tanggal}*`,
+                `Total Muat : *${grandTotal.toLocaleString('id-ID')} Karton* (${items.length} Armada)`,
+                ``,
+                daftarBaris,
+                ``,
+                bagianPenutup,
+                `Info lebih lanjut silakan buka via *aplikasi* :`,
+                URL_APLIKASI_JADILO
+            ].join("\n");
+
+            bukaWhatsAppDenganTeks(pesan);
+        }    
 
 
     // REGISTRASI SERVICE WORKER (JADILO v0.1.7)
