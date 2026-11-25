@@ -514,20 +514,50 @@
                     </button>
                 </div>
 
-                <!-- MODE 2: UPLOAD FOTO / GAMBAR JADWAL (BARU) -->
+                <!-- MODE 2: UPLOAD FOTO / GAMBAR JADWAL -->
                 <div id="area-upload-foto" class="hidden border-2 border-dashed border-emerald-200 dark:border-slate-700 rounded-2xl p-5 text-center">
                     <h3 class="font-bold mb-1 text-slate-700 dark:text-slate-300 text-sm">Scan / Upload Foto Jadwal</h3>
-                    <p class="text-[10px] text-slate-400 dark:text-slate-500 mb-4">Ambil foto jadwal cetak atau pilih dari galeri</p>
-                    
-                    <input type="file" id="fotoJadwalInput" accept="image/*" class="hidden" onchange="previewFotoJadwal(event)">
-                    
-                    <label onclick="document.getElementById('fotoJadwalInput').click()" class="bg-slate-50 dark:bg-slate-950 px-6 py-6 rounded-2xl block border border-slate-100 dark:border-slate-800/80 cursor-pointer transition-colors hover:border-emerald-400">
+                    <p class="text-[10px] text-slate-400 dark:text-slate-500 mb-4">Ambil foto jadwal cetak dari kamera atau pilih dari galeri</p>
+
+                    <!-- Input khusus kamera & galeri -->
+                    <input type="file" id="fotoKameraInput" accept="image/*" capture="environment" class="hidden" onchange="terimaFotoJadwal(event)">
+                    <input type="file" id="fotoJadwalInput" accept="image/*" class="hidden" onchange="terimaFotoJadwal(event)">
+
+                    <!-- Tombol aksi Kamera & Galeri -->
+                    <div class="grid grid-cols-2 gap-2.5 mb-3">
+                        <button type="button" onclick="bukaKameraJadwal()"
+                            class="bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-3 rounded-xl text-[11px] font-black uppercase tracking-wider shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-camera"></i> Kamera
+                        </button>
+                        <button type="button" onclick="bukaGaleriJadwal()"
+                            class="bg-slate-700 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white py-2.5 px-3 rounded-xl text-[11px] font-black uppercase tracking-wider shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-images"></i> Galeri
+                        </button>
+                    </div>
+
+                    <div onclick="bukaGaleriJadwal()" class="bg-slate-50 dark:bg-slate-950 px-6 py-6 rounded-2xl block border border-slate-100 dark:border-slate-800/80 cursor-pointer transition-colors hover:border-emerald-400">
                         <div id="placeholder-foto-jadwal">
                             <i class="fa-solid fa-image text-3xl text-emerald-500 dark:text-emerald-400 mb-2"></i>
-                            <p id="fotoNameDisplay" class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Ketuk untuk pilih foto / kamera</p>
+                            <p id="fotoNameDisplay" class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Ketuk tombol Kamera atau Galeri di atas</p>
                         </div>
                         <img id="previewImgJadwal" class="hidden max-h-48 mx-auto rounded-xl shadow-md object-contain" alt="Preview Jadwal">
-                    </label>
+                    </div>
+
+                    <!-- Modal / Box Kamera Live (untuk browser/desktop yang mendukung getUserMedia) -->
+                    <div id="box-kamera-live" class="hidden mt-4 bg-slate-950 p-3 rounded-2xl border border-slate-800 text-center">
+                        <video id="videoKameraJadwal" autoplay playsinline muted class="w-full max-h-56 rounded-xl bg-black object-cover mx-auto"></video>
+                        <canvas id="canvasKameraJadwal" class="hidden"></canvas>
+                        <div class="flex gap-2 mt-3">
+                            <button type="button" onclick="jepretFotoKameraLive()"
+                                class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider active:scale-95 transition-all">
+                                <i class="fa-solid fa-circle-dot mr-1"></i> Ambil Foto
+                            </button>
+                            <button type="button" onclick="tutupKameraLive()"
+                                class="px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider active:scale-95 transition-all">
+                                Tutup
+                            </button>
+                        </div>
+                    </div>
 
                     <!-- Progress Bar OCR -->
                     <div id="ocr-progress-box" class="hidden mt-4 text-left bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
@@ -559,12 +589,10 @@
                             </button>
                         </div>
 
-                        <div id="list-preview-ocr" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
-                            <!-- Item hasil bacaan foto akan muncul di sini -->
-                        </div>
+                        <div id="list-preview-ocr" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1"></div>
 
                         <button type="button" onclick="simpanHasilOCRKeServer()" id="btnSimpanOCR" class="w-full bg-blue-600 hover:bg-blue-700 text-white mt-4 py-3.5 rounded-xl font-bold shadow-lg active:scale-95 transition-all uppercase text-xs tracking-widest">
-                            PUBLISH JADWAL FOTO KE SERVER
+                            SIMPAN KE SERVER
                         </button>
                     </div>
                 </div>
@@ -3973,9 +4001,109 @@
             if (areaFoto) areaFoto.classList.toggle('hidden', isExcel || !bolehFoto);
         }
 
-        function previewFotoJadwal(event) {
-            const file = event.target.files && event.target.files[0];
+        let streamKameraJadwal = null;
+
+        function bukaGaleriJadwal() {
+            tutupKameraLive();
+            const inputGaleri = document.getElementById('fotoJadwalInput');
+            if (inputGaleri) {
+                inputGaleri.value = "";
+                inputGaleri.click();
+            }
+        }
+
+        async function bukaKameraJadwal() {
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            const inputKamera = document.getElementById('fotoKameraInput');
+
+            // Di perangkat mobile / WebView, trigger input capture="environment" lebih natural
+            if (isMobile && inputKamera) {
+                inputKamera.value = "";
+                inputKamera.click();
+                return;
+            }
+
+            // Di laptop/desktop atau browser yang mendukung getUserMedia live preview
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                try {
+                    tutupKameraLive();
+                    streamKameraJadwal = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: { ideal: "environment" } },
+                        audio: false
+                    });
+
+                    const boxKamera = document.getElementById('box-kamera-live');
+                    const videoEl = document.getElementById('videoKameraJadwal');
+                    if (videoEl) videoEl.srcObject = streamKameraJadwal;
+                    if (boxKamera) boxKamera.classList.remove('hidden');
+                    return;
+                } catch (err) {
+                    console.warn("Kamera live tidak tersedia / izin ditolak, fallback ke file picker:", err);
+                }
+            }
+
+            if (inputKamera) {
+                inputKamera.value = "";
+                inputKamera.click();
+            }
+        }
+
+        function tutupKameraLive() {
+            if (streamKameraJadwal) {
+                streamKameraJadwal.getTracks().forEach(track => track.stop());
+                streamKameraJadwal = null;
+            }
+            const videoEl = document.getElementById('videoKameraJadwal');
+            if (videoEl) videoEl.srcObject = null;
+            const boxKamera = document.getElementById('box-kamera-live');
+            if (boxKamera) boxKamera.classList.add('hidden');
+        }
+
+        function jepretFotoKameraLive() {
+            const videoEl = document.getElementById('videoKameraJadwal');
+            const canvasEl = document.getElementById('canvasKameraJadwal');
+            const inputUtama = document.getElementById('fotoJadwalInput');
+            if (!videoEl || !canvasEl || !inputUtama) return;
+
+            const w = videoEl.videoWidth || 1280;
+            const h = videoEl.videoHeight || 720;
+            canvasEl.width = w;
+            canvasEl.height = h;
+
+            const ctx = canvasEl.getContext('2d');
+            ctx.drawImage(videoEl, 0, 0, w, h);
+
+            canvasEl.toBlob((blob) => {
+                if (!blob) return;
+                const fileHasil = new File([blob], `jadwal_kamera_${Date.now()}.jpg`, { type: 'image/jpeg' });
+                const dt = new DataTransfer();
+                dt.items.add(fileHasil);
+                inputUtama.files = dt.files;
+
+                tutupKameraLive();
+                tampilkanPreviewDariFile(fileHasil);
+            }, 'image/jpeg', 0.85);
+        }
+
+        function terimaFotoJadwal(event) {
+            const file = event && event.target && event.target.files ? event.target.files[0] : null;
             if (!file) return;
+
+            // Jika datang dari fotoKameraInput, salin ke fotoJadwalInput agar prosesBacaFotoJadwal() tetap baca satu input utama
+            const inputUtama = document.getElementById('fotoJadwalInput');
+            if (event.target.id === 'fotoKameraInput' && inputUtama && typeof DataTransfer !== "undefined") {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                inputUtama.files = dt.files;
+            }
+
+            tutupKameraLive();
+            tampilkanPreviewDariFile(file);
+        }
+
+        function tampilkanPreviewDariFile(file) {
+            const namaDisplay = document.getElementById('fotoNameDisplay');
+            if (namaDisplay) namaDisplay.innerText = file.name;
 
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -3992,6 +4120,11 @@
                 if (statusEl) statusEl.innerText = "";
             };
             reader.readAsDataURL(file);
+        }
+
+        // Alias agar pemanggilan lama previewFotoJadwal tetap jalan
+        function previewFotoJadwal(event) {
+            terimaFotoJadwal(event);
         }
 
         function siapkanPayloadGambar(file, maxWidth = 1024, quality = 0.72) {
@@ -5483,6 +5616,47 @@
             return "❌";
         }
 
+        function formatJudulArmadaWA(tanggal) {
+            const tglStr = String(tanggal || "").trim();
+            if (!tglStr) return "Info Armada";
+
+            const namaHari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+            const bulanMap = {
+                januari: 0, februari: 1, maret: 2, april: 3, mei: 4, juni: 5,
+                juli: 6, agustus: 7, september: 8, oktober: 9, november: 10, desember: 11,
+                jan: 0, feb: 1, mar: 2, apr: 3, jun: 5, jul: 6, agu: 7, ags: 7,
+                sep: 8, okt: 9, nov: 10, des: 11
+            };
+
+            let tglObj = null;
+
+            // Coba parsing format seperti "25 November 2026" atau "25 NOVEMBER 2026"
+            const matchIndo = tglStr.match(/^(\d{1,2})\s+([a-zA-Z]+)\s+(\d{4})$/);
+            if (matchIndo) {
+                const hari = parseInt(matchIndo[1], 10);
+                const bln = bulanMap[matchIndo[2].toLowerCase()];
+                const thn = parseInt(matchIndo[3], 10);
+                if (bln !== undefined) {
+                    tglObj = new Date(thn, bln, hari);
+                }
+            }
+
+            // Fallback parsing standar jika format tanggal berbeda
+            if (!tglObj || isNaN(tglObj.getTime())) {
+                const dicoba = new Date(tglStr);
+                if (!isNaN(dicoba.getTime())) {
+                    tglObj = dicoba;
+                }
+            }
+
+            if (tglObj && !isNaN(tglObj.getTime())) {
+                const hariTeks = namaHari[tglObj.getDay()];
+                return `Info Armada ${hariTeks}, ${tglStr}`;
+            }
+
+            return `Info Armada ${tglStr}`;
+        }
+
         function kirimRekapJadwalWA(tanggal) {
             const cache = window.localCacheData || [];
             const items = cache.filter(item => {
@@ -5523,19 +5697,24 @@
                 ? `Mohon bantuannya untuk memastikan kedatangan armada yg belum datang 🙏🏻`
                 : `Semua armada pada jadwal ini sudah terupdate 🙏🏻`;
 
+            const judulHeader = typeof formatJudulArmadaWA === "function"
+                ? formatJudulArmadaWA(tanggal)
+                : `Info Armada ${tanggal}`;
+
             const pesan = [
-                `*Info armada ${tanggal}*`,
+                `*${judulHeader}*`,
                 `Total Armada : *${items.length}* [ ${bagianRingkasanStatus} ]`,
                 ``,
                 daftarBaris,
                 ``,
                 bagianPenutup,
-                `Info lebih lanjut silakan buka via *Aplikasi* :`,
+                ``,
+                `Info lebih lanjut silakan buka via *Aplikasi JADILO* :`,
                 URL_APLIKASI_JADILO
             ].join("\n");
 
             bukaWhatsAppDenganTeks(pesan);
-        }   
+        }  
 
 
     // REGISTRASI SERVICE WORKER (JADILO v0.1.7)
