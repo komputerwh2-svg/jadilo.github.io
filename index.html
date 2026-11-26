@@ -5614,6 +5614,82 @@
             if (typeof terapkanHakAkses === 'function') terapkanHakAkses();
         }
 
+        const DAFTAR_ID_INPUT_QTY_MODAL = [
+            'val-wh1', 'val-wh1-tambahan', 'val-wh1-titipan',
+            'val-wh2', 'val-wh2-tambahan', 'val-wh2-titipan'
+        ];
+
+        function ambilStatusAktifModalSaatIni() {
+            const ctx = window._konteksModalUpdateStatus || {};
+            const idEdit = document.getElementById('edit-id')?.value || ctx.id;
+            const cacheIndex = Array.isArray(localCacheData) && idEdit !== undefined && idEdit !== ''
+                ? localCacheData.findIndex((item) => item && item.id == idEdit)
+                : -1;
+
+            return String(
+                (cacheIndex !== -1 && localCacheData[cacheIndex]?.status) ||
+                ctx.status ||
+                'BELUM'
+            ).toUpperCase();
+        }
+
+        function cegahInputSebelumDatang(el) {
+            const statusKini = ambilStatusAktifModalSaatIni();
+            if (statusKini !== 'DATANG') {
+                if (el && typeof el.blur === 'function') {
+                    el.blur();
+                }
+                alert("Silakan ubah status ke DATANG terlebih dahulu untuk mengisi input qty muat.");
+                return true;
+            }
+            return false;
+        }
+
+        function terapkanPengamanStatusDatangModal(statusAktif) {
+            const statusUpper = String(statusAktif || ambilStatusAktifModalSaatIni()).toUpperCase();
+            const sudahDatang = statusUpper === 'DATANG';
+
+            ['input-wh1', 'input-wh2'].forEach((idBlok) => {
+                const blok = document.getElementById(idBlok);
+                if (!blok) return;
+                const gridKolom = blok.querySelector('.grid');
+                if (gridKolom) {
+                    if (!sudahDatang) {
+                        gridKolom.classList.add('blur-[1.5px]', 'opacity-60', 'select-none', 'cursor-not-allowed');
+                    } else {
+                        gridKolom.classList.remove('blur-[1.5px]', 'opacity-60', 'select-none', 'cursor-not-allowed');
+                    }
+                }
+            });
+
+            DAFTAR_ID_INPUT_QTY_MODAL.forEach((idInput) => {
+                const inp = document.getElementById(idInput);
+                if (!inp) return;
+
+                if (!sudahDatang) {
+                    inp.readOnly = true;
+                    inp.classList.add('cursor-not-allowed');
+                    inp.setAttribute('onmousedown', "return cegahInputSebelumDatang(this);");
+                    inp.setAttribute('ontouchstart', "return cegahInputSebelumDatang(this);");
+                    inp.setAttribute('onfocus', "cegahInputSebelumDatang(this);");
+                } else {
+                    inp.readOnly = false;
+                    inp.classList.remove('cursor-not-allowed');
+                    inp.removeAttribute('onmousedown');
+                    inp.removeAttribute('ontouchstart');
+
+                    if (idInput === 'val-wh1') {
+                        inp.setAttribute('onfocus', "handleFocusQtyMuatUtama(this, 'wh1')");
+                    } else if (idInput === 'val-wh2') {
+                        inp.setAttribute('onfocus', "handleFocusQtyMuatUtama(this, 'wh2')");
+                    } else {
+                        inp.setAttribute('onfocus', "if(this.value === '0') this.value = '';");
+                    }
+                    inp.setAttribute('onblur', "handleBlurQtyMuat(this)");
+                }
+            });
+        }
+
         /**
          * Helper: Menyinkronkan visual tombol status cepat (BELUM / PENDING / DATANG)
          */
@@ -5637,7 +5713,6 @@
                 }
             });
 
-            // Sinkronkan juga radio tersembunyi jika ada
             const radios = document.getElementsByName('status');
             radios.forEach((r) => {
                 if (r.value === up) r.checked = true;
@@ -5666,6 +5741,9 @@
             const indexRenderAsli = btnSimpan ? parseInt(btnSimpan.getAttribute('data-index-render'), 10) : null;
             const index = Array.isArray(localCacheData) ? localCacheData.findIndex((item) => item && item.id == id) : -1;
 
+            if (window._konteksModalUpdateStatus) {
+                window._konteksModalUpdateStatus.status = statusUpper;
+            }
             sinkronTampilanTombolStatusModal(statusUpper);
 
             const sekarang = new Date();
@@ -5698,7 +5776,6 @@
                 localCacheData[index].timeStatus = timeStatusBaru;
                 localStorage.setItem('database_jadwal', JSON.stringify(localCacheData));
 
-                // Update khusus field status & timeStatus saja di Firebase
                 try {
                     const pathDriverFirebase = `master_jadwal/${stringHariFirebase}/list/${indeksListFirebase}`;
                     const payloadStatusOnly = {
@@ -5798,22 +5875,15 @@
         /**
          * Saat fokus di QTY MUAT UTAMA:
          * - Hanya menyalin dari draft_muat jika status armada sudah 'DATANG' dan nilai saat ini 0.
-         * - Jika status masih 'BELUM' atau 'PENDING', jangan salin draft muat (kosongkan saja jika 0).
+         * - Jika status masih 'BELUM' atau 'PENDING', cegah & beri peringatan.
          */
         function handleFocusQtyMuatUtama(el, whKey) {
+            if (cegahInputSebelumDatang(el)) return;
             if (!el || el.readOnly || el.disabled) return;
+
             const bersih = String(el.value || '').trim();
             const angkaSaatIni = bersih === '' ? 0 : (parseInt(bersih, 10) || 0);
-
-            const ctx = window._konteksModalUpdateStatus || {};
-            const cacheIndex = Array.isArray(localCacheData) && ctx.id !== undefined
-                ? localCacheData.findIndex((item) => item && item.id == ctx.id)
-                : -1;
-            const statusTerakhir = String(
-                (cacheIndex !== -1 && localCacheData[cacheIndex]?.status) ||
-                ctx.status ||
-                ''
-            ).toUpperCase();
+            const statusTerakhir = ambilStatusAktifModalSaatIni();
 
             if (angkaSaatIni === 0) {
                 if (statusTerakhir === 'DATANG') {
@@ -5839,8 +5909,6 @@
 
         /**
          * 10. REVISI UTAMA: FUNGSI BUKA MODAL UPDATE STATUS & JUMLAH KARTON MUATAN
-         * Saat dibuka, qty tetap apa adanya (0 jika belum ada) dan otomatis menarik draft_muat
-         * dari Firebase bila belum dimuat, lalu menyalin saat fokus ke QTY MUAT UTAMA bila status DATANG.
          */
         async function bukaModalUpdate(id, driver, wh1, wh2, statusAktif, ekspedisi, kota, indexRender) {
             const userLevel = (localStorage.getItem('userLevel') || '').toUpperCase();
@@ -5896,41 +5964,18 @@
             if (inputWh1) {
                 inputWh1.value = nilaiWh1;
                 delete inputWh1.dataset.disalinDariDraft;
-                inputWh1.setAttribute('onfocus', "handleFocusQtyMuatUtama(this, 'wh1')");
-                inputWh1.setAttribute('onblur', "handleBlurQtyMuat(this)");
             }
-
             if (inputWh2) {
                 inputWh2.value = nilaiWh2;
                 delete inputWh2.dataset.disalinDariDraft;
-                inputWh2.setAttribute('onfocus', "handleFocusQtyMuatUtama(this, 'wh2')");
-                inputWh2.setAttribute('onblur', "handleBlurQtyMuat(this)");
             }
-
-            if (inputWh1Tamb) {
-                inputWh1Tamb.value = nilaiWh1Tambahan;
-                inputWh1Tamb.setAttribute('onfocus', "if(this.value === '0') this.value = '';");
-                inputWh1Tamb.setAttribute('onblur', "handleBlurQtyMuat(this)");
-            }
-            if (inputWh1Titip) {
-                inputWh1Titip.value = nilaiWh1Titipan;
-                inputWh1Titip.setAttribute('onfocus', "if(this.value === '0') this.value = '';");
-                inputWh1Titip.setAttribute('onblur', "handleBlurQtyMuat(this)");
-            }
-            if (inputWh2Tamb) {
-                inputWh2Tamb.value = nilaiWh2Tambahan;
-                inputWh2Tamb.setAttribute('onfocus', "if(this.value === '0') this.value = '';");
-                inputWh2Tamb.setAttribute('onblur', "handleBlurQtyMuat(this)");
-            }
-            if (inputWh2Titip) {
-                inputWh2Titip.value = nilaiWh2Titipan;
-                inputWh2Titip.setAttribute('onfocus', "if(this.value === '0') this.value = '';");
-                inputWh2Titip.setAttribute('onblur', "handleBlurQtyMuat(this)");
-            }
+            if (inputWh1Tamb) inputWh1Tamb.value = nilaiWh1Tambahan;
+            if (inputWh1Titip) inputWh1Titip.value = nilaiWh1Titipan;
+            if (inputWh2Tamb) inputWh2Tamb.value = nilaiWh2Tambahan;
+            if (inputWh2Titip) inputWh2Titip.value = nilaiWh2Titipan;
 
             refreshBadgeDraftMuatModal(statusUpper);
 
-            // Jika draft_muat untuk hari ini belum ada di memori, ambil otomatis dari Firebase
             const cekMaster = window.dataMasterJadwal || window.masterJadwal || {};
             const butuhAmbilDraft = stringHariFirebase && stringHariFirebase !== 'hari_' && !cekMaster[stringHariFirebase]?.draft_muat;
             const refMaster = typeof ambilRefMasterJadwal === 'function' ? ambilRefMasterJadwal() : null;
@@ -5950,9 +5995,7 @@
                 }
             }
 
-            if (typeof sinkronTampilanTombolStatusModal === 'function') {
-                sinkronTampilanTombolStatusModal(statusUpper);
-            }
+            sinkronTampilanTombolStatusModal(statusUpper);
 
             let namaEkspedisi = ekspedisi;
             let namaKota = kota;
@@ -5986,6 +6029,8 @@
             } else {
                 if (btnSimpan) btnSimpan.classList.add('hidden');
             }
+
+            terapkanPengamanStatusDatangModal(statusUpper);
 
             const modal = document.getElementById('modalUpdate');
             const wrapper = document.getElementById('modalStackWrapper');
@@ -6033,6 +6078,12 @@
                     userDivisi === 'PENJ' || userDivisi === 'TAMU' || userDivisi === 'GUEST'
                 ) {
                     alert("Akses Ditolak: Anda tidak memiliki izin untuk menyimpan data ini.");
+                    return;
+                }
+
+                const statusAktual = String(dataTarget.status || '').toUpperCase();
+                if (statusAktual !== 'DATANG') {
+                    alert("Silakan ubah status ke DATANG terlebih dahulu untuk mengisi input qty muat.");
                     return;
                 }
 
@@ -6194,17 +6245,14 @@
                     modalUpdate.classList.add('hidden');
                 }
 
-                const fieldsReset = [
-                    'val-wh1', 'val-wh1-tambahan', 'val-wh1-titipan',
-                    'val-wh2', 'val-wh2-tambahan', 'val-wh2-titipan'
-                ];
-                fieldsReset.forEach((idField) => {
+                DAFTAR_ID_INPUT_QTY_MODAL.forEach((idField) => {
                     const el = document.getElementById(idField);
                     if (el) el.value = 0;
                 });
 
                 const idEdit = document.getElementById('edit-id');
                 if (idEdit) idEdit.value = "";
+                window._konteksModalUpdateStatus = null;
             }, 300);
 
             if (typeof aturVisibilitasChat === 'function') {
