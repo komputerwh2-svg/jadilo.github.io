@@ -7499,7 +7499,9 @@
         keyHari: '',
         labelTanggal: '',
         listArmada: [],
-        customValues: {} // { [rowUid]: { kiri, tengah, kanan } }
+        customValues: {}, // { [rowUid]: { kiri, tengah, kanan } }
+        savedBonKbkb: {},
+        _loadedBonToken: ''
     };
 
     window._sedangKonfirmasiTitipanBon = window._sedangKonfirmasiTitipanBon || {};
@@ -7522,6 +7524,16 @@
     function sinkronGudangBonKbkbUser() {
         const lockedWh = deteksiWhTerkunciUser();
         const isAdmin = isUserAdminBonKbkb() || !lockedWh;
+
+        window._stateBonKbkb = window._stateBonKbkb || {
+            wh: null,
+            keyHari: '',
+            labelTanggal: '',
+            listArmada: [],
+            customValues: {},
+            savedBonKbkb: {},
+            _loadedBonToken: ''
+        };
 
         if (lockedWh) {
             window._stateBonKbkb.wh = lockedWh;
@@ -7562,11 +7574,13 @@
 
     function gantiGudangBonKbkb(wh) {
         const lockedWh = deteksiWhTerkunciUser();
+        window._stateBonKbkb = window._stateBonKbkb || {};
         if (lockedWh && wh !== lockedWh) {
             window._stateBonKbkb.wh = lockedWh;
         } else {
             window._stateBonKbkb.wh = wh === 'WH1' ? 'WH1' : 'WH2';
         }
+        window._stateBonKbkb._loadedBonToken = '';
         sinkronGudangBonKbkbUser();
         renderSubpageBonKbkb();
     }
@@ -7674,7 +7688,7 @@
             }
         }
 
-        if (labelTanggal && Array.isArray(localCacheData) && localCacheData.length) {
+        if (labelTanggal && typeof localCacheData !== 'undefined' && Array.isArray(localCacheData) && localCacheData.length) {
             const targetNorm = normalisasiKeyHariBonKbkb(labelTanggal);
             const dariCache = localCacheData.filter((item) => {
                 if (!item || typeof item !== 'object') return false;
@@ -7785,6 +7799,78 @@
             : (Number(item.wh1_tambahan ?? item.tambahan_wh1 ?? item.tambahan ?? 0) || 0);
     }
 
+    async function muatBonKbkbDariFirebase(keyHari, whTarget, listArmada = []) {
+        if (!keyHari) return null;
+        const gudang = String(whTarget || sinkronGudangBonKbkbUser() || 'WH2').toUpperCase();
+        const pathBon = `bon_kbkb/${gudang.toLowerCase()}`;
+
+        try {
+            let savedData = null;
+            const refMaster = typeof ambilRefMasterJadwal === 'function' ? ambilRefMasterJadwal() : null;
+
+            if (refMaster) {
+                const snap = await refMaster.child(`${keyHari}/${pathBon}`).once('value');
+                savedData = snap.val();
+            } else if (typeof db !== 'undefined' && db && db.ref) {
+                const snap = await db.ref(`master_jadwal/${keyHari}/${pathBon}`).once('value');
+                savedData = snap.val();
+            } else if (typeof firebase !== 'undefined' && firebase.database) {
+                const snap = await firebase.database().ref(`master_jadwal/${keyHari}/${pathBon}`).once('value');
+                savedData = snap.val();
+            }
+
+            if (!savedData || !Array.isArray(savedData.items)) return null;
+
+            const state = window._stateBonKbkb || {};
+            const customBaru = { ...(state.customValues || {}) };
+            const armadaAktif = Array.isArray(listArmada) && listArmada.length
+                ? listArmada
+                : (Array.isArray(state.listArmada) ? state.listArmada : []);
+
+            savedData.items.forEach((savedRow, idx) => {
+                if (!savedRow) return;
+                const cocokArmada = armadaAktif.find((a, i) =>
+                    String(a?.id ?? i) === String(savedRow.id ?? idx)
+                );
+                const itemId = cocokArmada ? (cocokArmada.id ?? idx) : (savedRow.id ?? idx);
+                const rowUid = `${keyHari}_${gudang}_${itemId}`;
+
+                const kiriSaved = Math.max(0, parseInt(savedRow.titipan_wh_lain, 10) || 0);
+                const tengahSaved = Math.max(0, parseInt(savedRow.muat_utama, 10) || 0);
+                const kananSaved = Math.max(0, parseInt(savedRow.titipan_khusus, 10) || 0);
+
+                customBaru[rowUid] = {
+                    ...(customBaru[rowUid] || {}),
+                    kiri: kiriSaved,
+                    tengah: tengahSaved,
+                    kanan: kananSaved
+                };
+            });
+
+            window._stateBonKbkb = {
+                ...state,
+                keyHari,
+                customValues: customBaru,
+                savedBonKbkb: {
+                    ...(state.savedBonKbkb || {}),
+                    [gudang.toLowerCase()]: savedData
+                }
+            };
+
+            if (window.dataMasterJadwal && window.dataMasterJadwal[keyHari]) {
+                window.dataMasterJadwal[keyHari].bon_kbkb = {
+                    ...(window.dataMasterJadwal[keyHari].bon_kbkb || {}),
+                    [gudang.toLowerCase()]: savedData
+                };
+            }
+
+            return savedData;
+        } catch (err) {
+            console.warn("Gagal memuat data Bon KBKB tersimpan dari Firebase:", err);
+            return null;
+        }
+    }
+
     async function handleKlikKolomTitipanWhLawan(el, rowUid, idxArmada, whTarget) {
         if (!el) return;
         if (window._sedangKonfirmasiTitipanBon[rowUid]) return;
@@ -7813,12 +7899,12 @@
                     const angka = Math.max(0, parseInt(qtyLawan, 10) || 0);
                     state.customValues[rowUid] = state.customValues[rowUid] || {};
                     state.customValues[rowUid].kiri = angka;
-                    renderSubpageBonKbkb();
+                    await renderSubpageBonKbkb();
                 } else {
                     state.customValues[rowUid] = state.customValues[rowUid] || {};
                     state.customValues[rowUid].kiri = 0;
                     el.value = '0';
-                    renderSubpageBonKbkb();
+                    await renderSubpageBonKbkb();
                 }
                 return;
             } finally {
@@ -7883,12 +7969,20 @@
             return;
         }
 
+        const tokenLoadBon = `${keyHariAktif}_${whTarget}`;
+        if (keyHariAktif && state._loadedBonToken !== tokenLoadBon) {
+            state._loadedBonToken = tokenLoadBon;
+            await muatBonKbkbDariFirebase(keyHariAktif, whTarget, armada);
+        }
+
+        state.customValues = state.customValues || {};
+
         let sumKiri = 0;
         let sumTengah = 0;
         let sumKanan = 0;
 
         container.innerHTML = armada.map((item, idx) => {
-            const rowUid = `${keyHariAktif || 'hari'}_${whTarget}_${item.id || idx}`;
+            const rowUid = `${keyHariAktif || 'hari'}_${whTarget}_${item.id ?? idx}`;
             const def = ambilNilaiDefaultBonArmada(item, whTarget);
             const ov = state.customValues[rowUid] || {};
 
@@ -7914,7 +8008,7 @@
                                 ${idx + 1}. ${ekspedisi}
                             </span>
                             <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                                • ${kota}
+                                - ${kota}
                             </span>
                             <div class="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
                                 ${driver} (${nopol})
@@ -7991,10 +8085,119 @@
 
     function ubahNilaiBonKbkb(rowUid, kolom, nilai) {
         const angka = Math.max(0, parseInt(nilai, 10) || 0);
+        window._stateBonKbkb = window._stateBonKbkb || {};
+        window._stateBonKbkb.customValues = window._stateBonKbkb.customValues || {};
         window._stateBonKbkb.customValues[rowUid] = window._stateBonKbkb.customValues[rowUid] || {};
         window._stateBonKbkb.customValues[rowUid][kolom] = angka;
         renderSubpageBonKbkb();
     }
+
+    async function simpanBonKbkbKeFirebase() {
+        const state = window._stateBonKbkb || {};
+        const keyHari = state.keyHari;
+        const whTarget = sinkronGudangBonKbkbUser();
+        const armada = Array.isArray(state.listArmada) ? state.listArmada : [];
+
+        if (!keyHari || !armada.length) {
+            alert("Pilih tanggal jadwal terlebih dahulu sebelum menyimpan Bon KBKB.");
+            return;
+        }
+
+        const customMap = (state.customValues && typeof state.customValues === 'object')
+            ? state.customValues
+            : {};
+
+        const rows = armada.map((item, idx) => {
+            const itemId = item.id ?? idx;
+            const rowUid = `${keyHari}_${whTarget}_${itemId}`;
+            const def = ambilNilaiDefaultBonArmada(item, whTarget);
+            const ov = customMap[rowUid] || {};
+
+            const kiri = Math.max(0, ov.kiri !== undefined && ov.kiri !== "" ? (parseInt(ov.kiri, 10) || 0) : (parseInt(def.kiri, 10) || 0));
+            const tengah = Math.max(0, ov.tengah !== undefined && ov.tengah !== "" ? (parseInt(ov.tengah, 10) || 0) : (parseInt(def.tengah, 10) || 0));
+            const kanan = Math.max(0, ov.kanan !== undefined && ov.kanan !== "" ? (parseInt(ov.kanan, 10) || 0) : (parseInt(def.kanan, 10) || 0));
+
+            return {
+                id: itemId,
+                ekspedisi: item.ekspedisi || item.Ekspedisi || '-',
+                nopol: item.nopol || item.Nopol || '-',
+                jenisMobil: item.jenisMobil || item.jenis_mobil || '-',
+                tujuan: item.tujuan || item.Tujuan || '-',
+                kota: item.kota || item.Kota || '-',
+                driver: item.driver || item.Driver || '-',
+                titipan_wh_lain: kiri,
+                muat_utama: tengah,
+                titipan_khusus: kanan,
+                subtotal: kiri + tengah + kanan
+            };
+        });
+
+        const totalKiri = rows.reduce((a, b) => a + b.titipan_wh_lain, 0);
+        const totalTengah = rows.reduce((a, b) => a + b.muat_utama, 0);
+        const totalKanan = rows.reduce((a, b) => a + b.titipan_khusus, 0);
+        const grandTotal = totalKiri + totalTengah + totalKanan;
+
+        const payload = {
+            warehouse: whTarget,
+            tanggal: state.labelTanggal || '',
+            updatedAt: new Date().toISOString(),
+            total_titipan_wh_lain: totalKiri,
+            total_muat_utama: totalTengah,
+            total_titipan_khusus: totalKanan,
+            grand_total: grandTotal,
+            items: rows
+        };
+
+        try {
+            const refMaster = typeof ambilRefMasterJadwal === 'function' ? ambilRefMasterJadwal() : null;
+            const pathBon = `bon_kbkb/${whTarget.toLowerCase()}`;
+            if (refMaster) {
+                await refMaster.child(`${keyHari}/${pathBon}`).set(payload);
+            } else if (typeof db !== 'undefined' && db && db.ref) {
+                await db.ref(`master_jadwal/${keyHari}/${pathBon}`).set(payload);
+            } else if (typeof firebase !== 'undefined' && firebase.database) {
+                await firebase.database().ref(`master_jadwal/${keyHari}/${pathBon}`).set(payload);
+            }
+
+            window._stateBonKbkb = {
+                ...state,
+                keyHari,
+                customValues: customMap,
+                _loadedBonToken: `${keyHari}_${whTarget}`,
+                savedBonKbkb: {
+                    ...(state.savedBonKbkb || {}),
+                    [whTarget.toLowerCase()]: payload
+                }
+            };
+
+            if (window.dataMasterJadwal && window.dataMasterJadwal[keyHari]) {
+                window.dataMasterJadwal[keyHari].bon_kbkb = {
+                    ...(window.dataMasterJadwal[keyHari].bon_kbkb || {}),
+                    [whTarget.toLowerCase()]: payload
+                };
+            }
+
+            if (typeof showToast === 'function') {
+                showToast(`Bon KBKB ${whTarget} tersimpan (${grandTotal.toLocaleString('id-ID')} Krt)`, 'success');
+            } else {
+                alert(`Bon KBKB ${whTarget} berhasil disimpan.`);
+            }
+        } catch (err) {
+            console.error("Gagal menyimpan Bon KBKB:", err);
+            alert("Gagal menyimpan Bon KBKB ke Firebase.");
+        }
+    }
+
+    document.addEventListener('change', (e) => {
+        if (e.target && e.target.tagName === 'SELECT') {
+            const subpageBon = document.getElementById('subpage-bon-kbkb');
+            if (subpageBon && !subpageBon.classList.contains('hidden')) {
+                window._stateBonKbkb = window._stateBonKbkb || {};
+                window._stateBonKbkb._loadedBonToken = '';
+                renderSubpageBonKbkb();
+            }
+        }
+    });
 
     function cetakBonKbkb() {
         const state = window._stateBonKbkb || {};
@@ -8012,14 +8215,12 @@
         let sumKanan = 0;
 
         const barisHtml = armada.map((item, idx) => {
-            const rowUid = `${state.keyHari || 'hari'}_${whTarget}_${item.id || idx}`;
+            const rowUid = `${state.keyHari || 'hari'}_${whTarget}_${item.id ?? idx}`;
             const def = ambilNilaiDefaultBonArmada(item, whTarget);
             const ov = state.customValues?.[rowUid] || {};
 
-            const tambahan = ambilQtyTambahanArmada(item, whTarget);
             const kiri = Math.max(0, ov.kiri !== undefined ? (parseInt(ov.kiri, 10) || 0) : def.kiri);
-            const tengahDasar = Math.max(0, ov.tengah !== undefined ? (parseInt(ov.tengah, 10) || 0) : def.tengah);
-            const tengah = tengahDasar + tambahan;
+            const tengah = Math.max(0, ov.tengah !== undefined ? (parseInt(ov.tengah, 10) || 0) : def.tengah);
             const kanan = Math.max(0, ov.kanan !== undefined ? (parseInt(ov.kanan, 10) || 0) : def.kanan);
 
             sumKiri += kiri;
@@ -8086,23 +8287,23 @@
                 <meta charset="UTF-8">
                 <title>JADWAL PENGIRIMAN - ${tanggalTeks}</title>
                 <style>
-                    body { font-family: Arial, sans-serif; color: #000; margin: 18px 22px; font-size: 11px; }
+                    body { font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif; color: #000; margin: 18px 22px; font-size: 12px; font-weight: 700; }
                     table.jadwal { width: 100%; border-collapse: collapse; }
-                    table.jadwal th, table.jadwal td { border: 1px solid #000; padding: 4px 6px; vertical-align: middle; }
-                    .kop-title { font-size: 16px; font-weight: 800; text-align: center; letter-spacing: 0.5px; }
-                    .ttd-hdr { background: #f2f2f2; font-weight: 700; text-align: center; font-size: 10px; width: 105px; }
+                    table.jadwal th, table.jadwal td { border: 1px solid #000; padding: 4px 6px; vertical-align: middle; font-weight: 700; }
+                    .kop-title { font-size: 20px; font-weight: 700; text-align: center; letter-spacing: 0.5px; }
+                    .ttd-hdr { background: #f2f2f2; font-weight: 700; text-align: center; font-size: 11px; width: 105px; }
                     .ttd-space { height: 34px; }
                     .ttd-nama { font-weight: 700; text-align: center; font-size: 10px; }
-                    .meta-pt { font-weight: 800; font-size: 11px; }
-                    .meta-tgl { font-weight: 800; font-size: 11px; text-align: center; }
-                    th.hdr-col { background: #e6e6e6; font-weight: 800; text-align: center; font-size: 10px; text-transform: uppercase; }
+                    .meta-pt { font-weight: 700; font-size: 12px; }
+                    .meta-tgl { font-weight: 700; font-size: 13px; text-align: center; }
+                    th.hdr-col { background: #e6e6e6; font-weight: 700; text-align: center; font-size: 11px; text-transform: uppercase; }
                     .tc { text-align: center; }
                     .ket-cell { padding: 3px 6px !important; }
-                    .ket-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; gap: 6px; font-weight: 700; }
+                    .ket-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; gap: 6px; font-weight: 700; font-size: 12px; }
                     .ket-kiri { text-align: left; }
                     .ket-tengah { text-align: center; }
                     .ket-kanan { text-align: right; }
-                    .total-ket-cell { padding: 4px 6px !important; font-weight: 800; }
+                    .total-ket-cell { padding: 4px 6px !important; font-weight: 700; font-size: 12px; }
                     .total-rincian { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; gap: 6px; }
                     .total-pos-kiri { text-align: left; }
                     .total-pos-tengah { text-align: center; }
@@ -8207,7 +8408,7 @@
     }
 
     async function simpanBonKbkbKeFirebase() {
-        const state = window._stateBonKbkb;
+        const state = window._stateBonKbkb || {};
         const keyHari = state.keyHari;
         const whTarget = sinkronGudangBonKbkbUser();
         const armada = Array.isArray(state.listArmada) ? state.listArmada : [];
@@ -8217,16 +8418,28 @@
             return;
         }
 
+        const customMap = (state.customValues && typeof state.customValues === 'object')
+            ? state.customValues
+            : {};
+
         const rows = armada.map((item, idx) => {
-            const rowUid = `${keyHari}_${whTarget}_${item.id || idx}`;
-            const def = ambilNilaiDefaultBonArmada(item, whTarget);
-            const ov = state.customValues[rowUid] || {};
-            const kiri = ov.kiri !== undefined ? (parseInt(ov.kiri, 10) || 0) : def.kiri;
-            const tengah = ov.tengah !== undefined ? (parseInt(ov.tengah, 10) || 0) : def.tengah;
-            const kanan = ov.kanan !== undefined ? (parseInt(ov.kanan, 10) || 0) : def.kanan;
+            const itemId = item.id ?? idx;
+            const rowUid = `${keyHari}_${whTarget}_${itemId}`;
+            const def = typeof ambilNilaiDefaultBonArmada === 'function'
+                ? ambilNilaiDefaultBonArmada(item, whTarget)
+                : { kiri: 0, tengah: 0, kanan: 0 };
+            const ov = customMap[rowUid] || {};
+            const tambahan = typeof ambilQtyTambahanArmada === 'function'
+                ? (parseInt(ambilQtyTambahanArmada(item, whTarget), 10) || 0)
+                : 0;
+
+            const kiri = Math.max(0, ov.kiri !== undefined && ov.kiri !== "" ? (parseInt(ov.kiri, 10) || 0) : (parseInt(def.kiri, 10) || 0));
+            const tengahDasar = Math.max(0, ov.tengah !== undefined && ov.tengah !== "" ? (parseInt(ov.tengah, 10) || 0) : (parseInt(def.tengah, 10) || 0));
+            const tengah = Math.max(0, tengahDasar + tambahan);
+            const kanan = Math.max(0, ov.kanan !== undefined && ov.kanan !== "" ? (parseInt(ov.kanan, 10) || 0) : (parseInt(def.kanan, 10) || 0));
 
             return {
-                id: item.id || idx,
+                id: itemId,
                 ekspedisi: item.ekspedisi || item.Ekspedisi || '-',
                 nopol: item.nopol || item.Nopol || '-',
                 jenisMobil: item.jenisMobil || item.jenis_mobil || '-',
@@ -8267,6 +8480,23 @@
                 await firebase.database().ref(`master_jadwal/${keyHari}/${pathBon}`).set(payload);
             }
 
+            // Sinkronkan payload tersimpan ke state & cache lokal agar tidak kembali ke data lama
+            window._stateBonKbkb = {
+                ...state,
+                customValues: customMap,
+                savedBonKbkb: {
+                    ...(state.savedBonKbkb || {}),
+                    [whTarget.toLowerCase()]: payload
+                }
+            };
+
+            if (window.dataMasterJadwal && window.dataMasterJadwal[keyHari]) {
+                window.dataMasterJadwal[keyHari].bon_kbkb = {
+                    ...(window.dataMasterJadwal[keyHari].bon_kbkb || {}),
+                    [whTarget.toLowerCase()]: payload
+                };
+            }
+
             if (typeof showToast === 'function') {
                 showToast(`Bon KBKB ${whTarget} tersimpan (${grandTotal.toLocaleString('id-ID')} Krt)`, 'success');
             } else {
@@ -8282,8 +8512,9 @@
         if (e.target && e.target.tagName === 'SELECT') {
             const subpageBon = document.getElementById('subpage-bon-kbkb');
             if (subpageBon && !subpageBon.classList.contains('hidden')) {
-                window._stateBonKbkb.listArmada = [];
-                renderSubpageBonKbkb();
+                if (typeof renderSubpageBonKbkb === 'function') {
+                    renderSubpageBonKbkb();
+                }
             }
         }
     });
