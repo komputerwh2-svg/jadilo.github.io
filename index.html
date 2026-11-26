@@ -6537,56 +6537,67 @@
                 : 'bg-slate-100 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-400 cursor-not-allowed opacity-75';
 
             return `
-            <div class="rounded-2xl bg-slate-50/90 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 p-3.5 transition-all">
+            <div class="rounded-2xl bg-slate-50/90 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 p-3 transition-all">
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-                    <!-- Kolom 1: Info Armada -->
-                    <div class="md:col-span-5 space-y-0.5">
+                    <!-- Bagian Kiri: Info Armada -->
+                    <div class="md:col-span-4 space-y-0.5 min-w-0">
                         <p class="text-xs font-black text-slate-800 dark:text-slate-100 uppercase truncate">${ekspedisi}</p>
                         <p class="text-[11px] font-semibold text-slate-600 dark:text-slate-300 truncate">${sopir}</p>
-                        <div class="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 pt-0.5">
+                        <div class="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 pt-0.5">
                             <span class="font-bold text-slate-700 dark:text-slate-200">${nopol}</span>
                             <span>•</span>
-                            <span><i class="fa-solid fa-location-dot text-[9px] text-rose-500 mr-0.5"></i>${tujuan}</span>
+                            <span class="truncate"><i class="fa-solid fa-location-dot text-[9px] text-rose-500 mr-0.5"></i>${tujuan}</span>
                         </div>
                     </div>
 
-                    <!-- Kolom 2: Input WH-1 -->
-                    <div class="md:col-span-3 bg-blue-50/60 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-xl p-2.5">
-                        <div class="flex items-center justify-between mb-1">
-                            <label for="input-wh1-${idx}" class="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                                Input WH-1
-                            </label>
-                            ${!bolehEdit1 ? '<i class="fa-solid fa-lock text-[9px] text-slate-400" title="Terkunci untuk divisi Anda"></i>' : ''}
+                    <!-- Bagian Kanan: 3 Kotak Seragam (WH-1 | WH-2 | Total Muat) -->
+                    <div class="md:col-span-8 grid grid-cols-3 gap-1.5 sm:gap-2.5 items-stretch">
+                        <!-- Kotak 1: Input Draft Muat WH-1 -->
+                        <div class="bg-blue-50/70 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-xl p-2 sm:p-2.5 flex flex-col justify-between min-w-0">
+                            <div class="flex items-center justify-between gap-1 mb-1">
+                                <label for="input-wh1-${idx}" class="text-[8px] sm:text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-tight sm:tracking-wider leading-tight">
+                                    Input Draft Muat WH-1
+                                </label>
+                                ${!bolehEdit1 ? '<i class="fa-solid fa-lock text-[8px] text-slate-400 shrink-0" title="Terkunci untuk divisi Anda"></i>' : ''}
+                            </div>
+                            <input type="number" min="0" id="input-wh1-${idx}" value="${val1}" ${disabled1Attr}
+                                oninput="updatePreviewTotalArmada(${idx})"
+                                onchange="simpanMuatWH('${keyHari}', ${idx}, 'wh1', this.value)"
+                                class="w-full rounded-lg border px-1.5 sm:px-2.5 py-1 text-xs sm:text-sm font-black outline-none transition-all ${inputWh1Class}">
+                            <p class="text-[8px] sm:text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-1">
+                                Karton
+                            </p>
                         </div>
-                        <input type="number" min="0" id="input-wh1-${idx}" value="${val1}" ${disabled1Attr}
-                            oninput="updatePreviewTotalArmada(${idx})"
-                            onchange="simpanMuatWH('${keyHari}', ${idx}, 'wh1', this.value)"
-                            class="w-full rounded-lg border px-2.5 py-1.5 text-xs font-black outline-none transition-all ${inputWh1Class}">
-                    </div>
 
-                    <!-- Kolom 3: Input WH-2 -->
-                    <div class="md:col-span-2 bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 rounded-xl p-2.5">
-                        <div class="flex items-center justify-between mb-1">
-                            <label for="input-wh2-${idx}" class="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                                Input WH-2
-                            </label>
-                            ${!bolehEdit2 ? '<i class="fa-solid fa-lock text-[9px] text-slate-400" title="Terkunci untuk divisi Anda"></i>' : ''}
+                        <!-- Kotak 2: Input Draft Muat WH-2 -->
+                        <div class="bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 rounded-xl p-2 sm:p-2.5 flex flex-col justify-between min-w-0">
+                            <div class="flex items-center justify-between gap-1 mb-1">
+                                <label for="input-wh2-${idx}" class="text-[8px] sm:text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight sm:tracking-wider leading-tight">
+                                    Input Draft Muat WH-2
+                                </label>
+                                ${!bolehEdit2 ? '<i class="fa-solid fa-lock text-[8px] text-slate-400 shrink-0" title="Terkunci untuk divisi Anda"></i>' : ''}
+                            </div>
+                            <input type="number" min="0" id="input-wh2-${idx}" value="${val2}" ${disabled2Attr}
+                                oninput="updatePreviewTotalArmada(${idx})"
+                                onchange="simpanMuatWH('${keyHari}', ${idx}, 'wh2', this.value)"
+                                class="w-full rounded-lg border px-1.5 sm:px-2.5 py-1 text-xs sm:text-sm font-black outline-none transition-all ${inputWh2Class}">
+                            <p class="text-[8px] sm:text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-1">
+                                Karton
+                            </p>
                         </div>
-                        <input type="number" min="0" id="input-wh2-${idx}" value="${val2}" ${disabled2Attr}
-                            oninput="updatePreviewTotalArmada(${idx})"
-                            onchange="simpanMuatWH('${keyHari}', ${idx}, 'wh2', this.value)"
-                            class="w-full rounded-lg border px-2.5 py-1.5 text-xs font-black outline-none transition-all ${inputWh2Class}">
-                    </div>
 
-                    <!-- Kolom 4: Total Muat Armada -->
-                    <div class="md:col-span-2 bg-slate-100/90 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl p-2.5 text-right">
-                        <p class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
-                            Total Muat
-                        </p>
-                        <p class="text-xs font-black text-slate-800 dark:text-slate-100">
-                            <span id="total-armada-${idx}">${totalArmada.toLocaleString('id-ID')}</span>
-                            <span class="text-[9px] font-bold text-slate-500">Krt</span>
-                        </p>
+                        <!-- Kotak 3: Total Muat -->
+                        <div class="bg-slate-100/90 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl p-2 sm:p-2.5 flex flex-col justify-between min-w-0">
+                            <p class="text-[8px] sm:text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tight sm:tracking-wider leading-tight mb-1">
+                                Total Muat
+                            </p>
+                            <p id="total-armada-${idx}" class="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 leading-tight py-1 truncate">
+                                ${totalArmada.toLocaleString('id-ID')}
+                            </p>
+                            <p class="text-[8px] sm:text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-1">
+                                Karton
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>`;
