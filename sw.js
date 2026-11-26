@@ -1,5 +1,5 @@
-// sw.js - Service Worker JADILO (Revisi v0.1.7 - Pure Web Push Receiver)
-const CACHE_NAME = 'jadilo-cache-v0.1.7';
+// sw.js - Service Worker JADILO (Revisi v0.1.9 - Pure Web Push Receiver)
+const CACHE_NAME = 'jadilo-cache-v0.1.9';
 const urlsToCache = [
   './',
   './index.html',
