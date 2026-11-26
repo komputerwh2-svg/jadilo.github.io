@@ -314,57 +314,145 @@
     </div>
 
     <div id="modalUpdate" class="fixed inset-0 z-[100] hidden">
-        <div class="absolute inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm"></div>
-        
-        <div class="absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-900 rounded-t-[40px] p-8 shadow-2xl border-t border-transparent dark:border-slate-800/80 transition-transform duration-300 translate-y-full" id="modalPanel">
-            <div class="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6"></div>
-            
-            <h3 id="modalTitle" class="text-lg font-black text-slate-800 dark:text-slate-100 uppercase tracking-tighter mb-1">UPDATE STATUS</h3>
-            <p id="modalSubtitle" class="text-[11px] text-slate-400 dark:text-slate-500 mb-6 font-bold uppercase tracking-wide"></p>
+        <div class="absolute inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm" onclick="tutupModal()"></div>
 
-            <form id="formUpdateStatus" onsubmit="simpanPerubahan(event)">
-                <input type="hidden" id="edit-id">
-                
-                <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Status Kedatangan</label>
-                <div class="flex gap-2 mt-2 mb-6">
-                    <label class="flex-grow">
-                        <input type="radio" name="status" value="BELUM" class="hidden peer">
-                        <div class="peer-checked:bg-red-500 peer-checked:text-white dark:peer-checked:bg-red-600 bg-slate-50 text-slate-400 dark:bg-slate-950 dark:text-slate-500 border border-slate-100 dark:border-slate-800 py-3 rounded-xl text-center text-[10px] font-black transition-all cursor-pointer">BELUM</div>
-                    </label>
-                    <label class="flex-grow">
-                        <input type="radio" name="status" value="PENDING" class="hidden peer">
-                        <div class="peer-checked:bg-orange-500 peer-checked:text-white dark:peer-checked:bg-orange-600 bg-slate-50 text-slate-400 dark:bg-slate-950 dark:text-slate-500 border border-slate-100 dark:border-slate-800 py-3 rounded-xl text-center text-[10px] font-black transition-all cursor-pointer">PENDING</div>
-                    </label>
-                    <label class="flex-grow">
-                        <input type="radio" name="status" value="DATANG" class="hidden peer">
-                        <div class="peer-checked:bg-green-500 peer-checked:text-white dark:peer-checked:bg-green-600 bg-slate-50 text-slate-400 dark:bg-slate-950 dark:text-slate-500 border border-slate-100 dark:border-slate-800 py-3 rounded-xl text-center text-[10px] font-black transition-all cursor-pointer">DATANG</div>
-                    </label>
+        <!-- Wrapper Bawah: Bar Status Mengambang di Atas + Modal Input Qty di Bawah -->
+        <div id="modalStackWrapper" class="absolute bottom-0 left-0 right-0 flex flex-col gap-2.5 px-3 sm:px-6 pb-3 sm:pb-6 transition-transform duration-300 translate-y-full max-h-[94vh] overflow-y-auto pointer-events-none">
+
+            <!-- 1. BAR STATUS KEDATANGAN MENGAMBANG DI ATAS MODAL -->
+            <div id="floatingStatusBar" class="pointer-events-auto mx-auto w-full max-w-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-3xl px-4 py-3 shadow-2xl border border-slate-200/80 dark:border-slate-700/80">
+                <div class="flex items-center justify-between mb-2 px-1">
+                    <span class="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                        Ubah Status Kedatangan
+                    </span>
                 </div>
-
-                <div id="input-wh1" class="hidden mb-4">
-                    <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Input Muat WH-1 (Karton)</label>
-                    <input type="number" id="val-wh1" class="w-full bg-slate-50 border border-slate-100 dark:bg-slate-950 dark:border-slate-800 p-4 rounded-xl mt-2 font-black text-blue-600 dark:text-blue-400 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="0">
-                    <p id="info-wh1" class="text-[9px] text-slate-400 dark:text-slate-500 mt-2 italic font-medium"></p>
-                </div>
-
-                <div id="input-wh2" class="hidden mb-4">
-                    <label class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Input Muat WH-2 (Karton)</label>
-                    <input type="number" id="val-wh2" class="w-full bg-slate-50 border border-slate-100 dark:bg-slate-950 dark:border-slate-800 p-4 rounded-xl mt-2 font-black text-blue-600 dark:text-blue-400 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="0">
-                    <p id="info-wh2" class="text-[9px] text-slate-400 dark:text-slate-500 mt-2 italic font-medium"></p>
-                </div>
-
-                <div class="flex gap-3 mt-8">
-                    <button type="button" onclick="tutupModal()" 
-                        class="flex-1 py-4 text-slate-600 dark:text-slate-400 font-bold text-xs bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700/80 rounded-2xl uppercase tracking-widest active:scale-95 transition-all">
-                        Batal
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" data-status-btn="BELUM" onclick="pilihStatusLangsung('BELUM')"
+                        class="btn-status-cepat bg-slate-50 text-slate-600 dark:bg-slate-950 dark:text-slate-400 border border-slate-200 dark:border-slate-800 py-2.5 rounded-xl text-center text-[10px] font-black uppercase transition-all cursor-pointer active:scale-95">
+                        BELUM
                     </button>
-                    
-                    <button type="submit" id="btn-simpan-modal"
-                        class="flex-[2] bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-black text-xs shadow-lg shadow-blue-200 dark:shadow-none uppercase tracking-widest active:scale-95 transition-all">
-                        Simpan Data
+                    <button type="button" data-status-btn="PENDING" onclick="pilihStatusLangsung('PENDING')"
+                        class="btn-status-cepat bg-slate-50 text-slate-600 dark:bg-slate-950 dark:text-slate-400 border border-slate-200 dark:border-slate-800 py-2.5 rounded-xl text-center text-[10px] font-black uppercase transition-all cursor-pointer active:scale-95">
+                        PENDING
+                    </button>
+                    <button type="button" data-status-btn="DATANG" onclick="pilihStatusLangsung('DATANG')"
+                        class="btn-status-cepat bg-slate-50 text-slate-600 dark:bg-slate-950 dark:text-slate-400 border border-slate-200 dark:border-slate-800 py-2.5 rounded-xl text-center text-[10px] font-black uppercase transition-all cursor-pointer active:scale-95">
+                        DATANG
                     </button>
                 </div>
-            </form>
+            </div>
+
+            <!-- 2. PANEL MODAL INPUT QTY MUAT -->
+            <div id="modalPanel" class="pointer-events-auto mx-auto w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[32px] p-6 sm:p-7 shadow-2xl border border-slate-100 dark:border-slate-800/80">
+                <div class="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-4"></div>
+
+                <h3 id="modalTitle" class="text-lg font-black text-slate-800 dark:text-slate-100 uppercase tracking-tighter mb-0.5">INPUT QTY MUAT ARMADA</h3>
+                <p id="modalSubtitle" class="text-[11px] text-slate-400 dark:text-slate-500 mb-5 font-bold uppercase tracking-wide"></p>
+
+                <form id="formUpdateStatus" onsubmit="simpanPerubahan(event)">
+                    <input type="hidden" id="edit-id">
+
+                    <!-- BLOK INPUT WH-1: KIRI MUAT UTAMA | TENGAH TAMBAHAN | KANAN TITIPAN -->
+                    <div id="input-wh1" class="hidden mb-4 bg-blue-50/40 dark:bg-blue-950/15 border border-blue-100 dark:border-blue-900/40 rounded-2xl p-3.5">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Input Muat WH-1 (Karton)</span>
+                            <span id="badge-draft-wh1" class="text-[9px] font-bold text-blue-500 dark:text-blue-400"></span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            <div>
+                                <label for="val-wh1" class="block text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                                    Qty Muat Utama
+                                </label>
+                                <input type="number" min="0" step="1" id="val-wh1"
+                                    onfocus="handleFocusAngkaMuat(this)"
+                                    oninput="handleInputAngkaMuat(this)"
+                                    onblur="handleBlurAngkaAngkaKosong(this)"
+                                    class="w-full bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-800 p-3 rounded-xl font-black text-blue-600 dark:text-blue-400 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="0">
+                            </div>
+
+                            <div>
+                                <label for="val-wh1-tambahan" class="block text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                                    Qty Tambahan
+                                </label>
+                                <input type="number" min="0" step="1" id="val-wh1-tambahan"
+                                    onfocus="handleFocusAngkaMuat(this)"
+                                    oninput="handleInputAngkaMuat(this)"
+                                    onblur="handleBlurAngkaAngkaKosong(this)"
+                                    class="w-full bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-800 p-3 rounded-xl font-black text-indigo-600 dark:text-indigo-400 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="0">
+                            </div>
+
+                            <div>
+                                <label for="val-wh1-titipan" class="block text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                                    Qty Titipan
+                                </label>
+                                <input type="number" min="0" step="1" id="val-wh1-titipan"
+                                    onfocus="handleFocusAngkaMuat(this)"
+                                    oninput="handleInputAngkaMuat(this)"
+                                    onblur="handleBlurAngkaAngkaKosong(this)"
+                                    class="w-full bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-800 p-3 rounded-xl font-black text-amber-600 dark:text-amber-400 text-sm focus:ring-2 focus:ring-amber-500 outline-none transition-all" placeholder="0">
+                            </div>
+                        </div>
+                        <p id="info-wh1" class="text-[9px] text-slate-400 dark:text-slate-500 mt-2 italic font-medium"></p>
+                    </div>
+
+                    <!-- BLOK INPUT WH-2: KIRI MUAT UTAMA | TENGAH TAMBAHAN | KANAN TITIPAN -->
+                    <div id="input-wh2" class="hidden mb-4 bg-emerald-50/40 dark:bg-emerald-950/15 border border-emerald-100 dark:border-emerald-900/40 rounded-2xl p-3.5">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Input Muat WH-2 (Karton)</span>
+                            <span id="badge-draft-wh2" class="text-[9px] font-bold text-emerald-600 dark:text-emerald-400"></span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            <div>
+                                <label for="val-wh2" class="block text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                                    Qty Muat Utama
+                                </label>
+                                <input type="number" min="0" step="1" id="val-wh2"
+                                    onfocus="handleFocusAngkaMuat(this)"
+                                    oninput="handleInputAngkaMuat(this)"
+                                    onblur="handleBlurAngkaAngkaKosong(this)"
+                                    class="w-full bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-800 p-3 rounded-xl font-black text-emerald-600 dark:text-emerald-400 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all" placeholder="0">
+                            </div>
+
+                            <div>
+                                <label for="val-wh2-tambahan" class="block text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                                    Qty Tambahan
+                                </label>
+                                <input type="number" min="0" step="1" id="val-wh2-tambahan"
+                                    onfocus="handleFocusAngkaMuat(this)"
+                                    oninput="handleInputAngkaMuat(this)"
+                                    onblur="handleBlurAngkaAngkaKosong(this)"
+                                    class="w-full bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-800 p-3 rounded-xl font-black text-teal-600 dark:text-teal-400 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all" placeholder="0">
+                            </div>
+
+                            <div>
+                                <label for="val-wh2-titipan" class="block text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                                    Qty Titipan
+                                </label>
+                                <input type="number" min="0" step="1" id="val-wh2-titipan"
+                                    onfocus="handleFocusAngkaMuat(this)"
+                                    oninput="handleInputAngkaMuat(this)"
+                                    onblur="handleBlurAngkaAngkaKosong(this)"
+                                    class="w-full bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-800 p-3 rounded-xl font-black text-amber-600 dark:text-amber-400 text-sm focus:ring-2 focus:ring-amber-500 outline-none transition-all" placeholder="0">
+                            </div>
+                        </div>
+                        <p id="info-wh2" class="text-[9px] text-slate-400 dark:text-slate-500 mt-2 italic font-medium"></p>
+                    </div>
+
+                    <div class="flex gap-3 mt-5">
+                        <button type="button" onclick="tutupModal()" 
+                            class="flex-1 py-3.5 text-slate-600 dark:text-slate-400 font-bold text-xs bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700/80 rounded-2xl uppercase tracking-widest active:scale-95 transition-all">
+                            Batal
+                        </button>
+                        
+                        <button type="submit" id="btn-simpan-modal"
+                            class="flex-[2] bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-2xl font-black text-xs shadow-lg shadow-blue-200 dark:shadow-none uppercase tracking-widest active:scale-95 transition-all">
+                            Simpan Qty Muat
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -5527,292 +5615,557 @@
         }
 
         /**
-         * 10. REVISI UTAMA: FUNGSI BUKA MODAL UPDATE STATUS & JUMLAH KARTON MUATAN
-         * Menyiapkan form modal berdasarkan level akses & divisi user (Double Protection).
-         * Mengunci sinkronisasi hak akses multi-warehouse dan auto-clear nilai '0' saat fokus.
-         * Default Version: v1.9.3 (Double Protection & Smart Focus)
-         * Update: Penambahan parameter indexRender untuk mencegah tabrakan array Firebase
+         * Helper: Menyinkronkan visual tombol status cepat (BELUM / PENDING / DATANG)
          */
-        function bukaModalUpdate(id, driver, wh1, wh2, statusAktif, ekspedisi, kota, indexRender) {
-            // Ambil session, paksa ke huruf besar agar tidak meleset saat dicocokkan
-            const userLevel = (localStorage.getItem('userLevel') || '').toUpperCase(); 
-            const userDivisi = (localStorage.getItem('userDivisi') || '').toUpperCase(); 
-            
-            // 1. ISI DATA KE FORM INPUT
-            document.getElementById('edit-id').value = id;
-            
-            // Simpan index render asli ke dalam attribute element tombol simpan modal sebagai jembatan data
-            const btnSimpan = document.getElementById('btn-simpan-modal'); 
-            if (btnSimpan) {
-                btnSimpan.setAttribute('data-index-render', indexRender);
-            }
-            
-            const inputWh1 = document.getElementById('val-wh1');
-            const inputWh2 = document.getElementById('val-wh2');
-            
-            inputWh1.value = wh1;
-            inputWh2.value = wh2;
+        function sinkronTampilanTombolStatusModal(statusAktif) {
+            const up = String(statusAktif || '').toUpperCase();
+            document.querySelectorAll('.btn-status-cepat').forEach((btn) => {
+                const st = btn.getAttribute('data-status-btn');
+                btn.classList.remove(
+                    'bg-red-500', 'dark:bg-red-600', 'border-red-500',
+                    'bg-orange-500', 'dark:bg-orange-600', 'border-orange-500',
+                    'bg-green-500', 'dark:bg-green-600', 'border-green-500',
+                    'text-white'
+                );
+                btn.classList.add('bg-slate-50', 'text-slate-600', 'dark:bg-slate-950', 'dark:text-slate-400');
 
-            // Fitur Kenyamanan: Otomatis hapus angka 0 saat kolom diklik/disentuh user
-            inputWh1.setAttribute('onfocus', "if(this.value === '0') this.value = '';");
-            inputWh1.setAttribute('onblur', "if(this.value === '') this.value = '0';");
-            inputWh2.setAttribute('onfocus', "if(this.value === '0') this.value = '';");
-            inputWh2.setAttribute('onblur', "if(this.value === '') this.value = '0';");
-
-            // Set radio button status kedatangan sesuai data aktif
-            const radios = document.getElementsByName('status');
-            radios.forEach(r => { if(r.value === statusAktif) r.checked = true; });
-
-            // 2. PROTEKSI AUTO-LOOKUP DATA SUBTITLE (Jika parameter fungsi tidak terkirim dari HTML)
-            let namaEkspedisi = ekspedisi;
-            let namaKota = kota;
-
-            if (!namaEkspedisi || !namaKota) {
-                const cacheIndex = localCacheData.findIndex(item => item.id == id);
-                if (cacheIndex !== -1) {
-                    const dataLokal = localCacheData[cacheIndex];
-                    namaEkspedisi = namaEkspedisi || dataLokal.ekspedisi || dataLokal.Ekspedisi;
-                    namaKota = namaKota || dataLokal.kota || dataLokal.Kota;
+                if (st === up) {
+                    btn.classList.remove('bg-slate-50', 'text-slate-600', 'dark:bg-slate-950', 'dark:text-slate-400');
+                    if (st === 'BELUM') btn.classList.add('bg-red-500', 'dark:bg-red-600', 'border-red-500', 'text-white');
+                    if (st === 'PENDING') btn.classList.add('bg-orange-500', 'dark:bg-orange-600', 'border-orange-500', 'text-white');
+                    if (st === 'DATANG') btn.classList.add('bg-green-500', 'dark:bg-green-600', 'border-green-500', 'text-white');
                 }
-            }
+            });
 
-            // Gabungkan teks info lengkap untuk Subtitle Modal
-            const infoLengkap = `Status : ${namaEkspedisi || '-'} | ${driver} | ${namaKota || '-'}`;
-            document.getElementById('modalSubtitle').innerText = infoLengkap;
-
-            // 3. RESET STATE VISUAL (Sembunyikan semua komponen input terlebih dahulu)
-            document.getElementById('input-wh1').classList.add('hidden');
-            document.getElementById('input-wh2').classList.add('hidden');
-            
-            if (btnSimpan) btnSimpan.classList.remove('hidden'); // Reset default tampil
-
-            // 4. DOUBLE PROTECTION: MANAJEMEN HAK AKSES BERDASARKAN LEVEL & DIVISI
-            
-            // Kategori Blokir: PENJ, TAMU, GUEST tidak boleh mengubah apa pun
-            if (userLevel === 'PENJ' || userLevel === 'TAMU' || userLevel === 'GUEST' || 
-                userDivisi === 'PENJ' || userDivisi === 'TAMU' || userDivisi === 'GUEST') {
-                
-                if (btnSimpan) btnSimpan.classList.add('hidden'); // Sembunyikan tombol proses
-                alert("Akses Ditolak: Level atau Divisi Anda tidak memiliki izin untuk mengubah data.");
-                
-            } 
-            // Kategori Akses Penuh: ADMIN atau SUPERUSER
-            else if (userDivisi === 'ADMIN' || userLevel === 'SUPERUSER') {
-                     
-                document.getElementById('input-wh1').classList.remove('hidden');
-                document.getElementById('input-wh2').classList.remove('hidden');
-                
-            } 
-            // Kategori Gudang 1: Hanya divisi WH-1 atau user khusus WH-1
-            else if (userDivisi === 'WH-1' || userLevel === 'WH-1') {
-                
-                document.getElementById('input-wh1').classList.remove('hidden');
-                
-            } 
-            // Kategori Gudang 2: Hanya divisi WH-2 atau user khusus WH-2
-            else if (userDivisi === 'WH-2' || userLevel === 'WH-2') {
-                
-                document.getElementById('input-wh2').classList.remove('hidden');
-                
-            } 
-            // Proteksi Cadangan Akhir jika hak akses tidak dikenali
-            else {
-                if (btnSimpan) btnSimpan.classList.add('hidden');
-            }
-
-            // 5. ANIMASI DAN TAMPILKAN MODAL
-            const modal = document.getElementById('modalUpdate');
-            const panel = document.getElementById('modalPanel');
-            
-            modal.classList.remove('hidden');
-            setTimeout(() => { panel.classList.remove('translate-y-full'); }, 10);
-            
-            if (typeof getarTombol === 'function') getarTombol();
-
-            // TAMBAHAN PROTEKSI v0.1.8: Sembunyikan chat saat modal terbuka
-            aturVisibilitasChat(true);
+            // Sinkronkan juga radio tersembunyi jika ada
+            const radios = document.getElementsByName('status');
+            radios.forEach((r) => {
+                if (r.value === up) r.checked = true;
+            });
         }
 
         /**
-         * ====================================================================
-         * FUNGSI EKSEKUSI PENYIMPANAN DATA MODAL LOGISTIK & TRIGGER FCM PUSH
-         * Mengirimkan update ke LocalStorage, Firebase, dan Broadcast Device
-         * ====================================================================
+         * Helper: Klik tombol status langsung simpan status saja ke Firebase & tutup modal
+         * (Tidak mengubah qty muat yang ada)
          */
-        async function simpanPerubahan(e) {
-            if (e) e.preventDefault(); 
-            
-            const id = document.getElementById('edit-id').value; 
-            const selectedStatus = document.querySelector('input[name="status"]:checked')?.value.toUpperCase();
-            const valWh1 = parseInt(document.getElementById('val-wh1').value) || 0;
-            const valWh2 = parseInt(document.getElementById('val-wh2').value) || 0;
-            
+        async function pilihStatusLangsung(statusBaru) {
+            const statusUpper = String(statusBaru || '').toUpperCase();
             const userLevel = (localStorage.getItem('userLevel') || '').toUpperCase();
             const userDivisi = (localStorage.getItem('userDivisi') || '').toUpperCase();
-            
-            // Ambil data index render asli dari tombol modal
+
+            if (
+                userLevel === 'PENJ' || userLevel === 'TAMU' || userLevel === 'GUEST' ||
+                userDivisi === 'PENJ' || userDivisi === 'TAMU' || userDivisi === 'GUEST'
+            ) {
+                alert("Akses Ditolak: Anda tidak memiliki izin untuk mengubah status.");
+                return;
+            }
+
+            const id = document.getElementById('edit-id')?.value;
             const btnSimpan = document.getElementById('btn-simpan-modal');
-            const indexRenderAsli = btnSimpan ? parseInt(btnSimpan.getAttribute('data-index-render')) : null;
-            
-            const index = localCacheData.findIndex(item => item.id == id);
-            
+            const indexRenderAsli = btnSimpan ? parseInt(btnSimpan.getAttribute('data-index-render'), 10) : null;
+            const index = Array.isArray(localCacheData) ? localCacheData.findIndex((item) => item && item.id == id) : -1;
+
+            sinkronTampilanTombolStatusModal(statusUpper);
+
+            const sekarang = new Date();
+            const jamTampil = sekarang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
+
+            if (index !== -1) {
+                const dataTarget = localCacheData[index];
+                let tglMentah = dataTarget.tglJadwal || dataTarget.tanggal || dataTarget.Tanggal || dataTarget.TGLJADWAL || "";
+                if (!tglMentah && id && String(id).includes('_')) {
+                    tglMentah = String(id).split('_')[0];
+                }
+
+                const stringHariFirebase = "hari_" + String(tglMentah).replace(/\s/g, '').toUpperCase();
+                const indeksListFirebase = (indexRenderAsli !== null && !isNaN(indexRenderAsli)) ? indexRenderAsli : index;
+
+                const statusSebelumnya = String(dataTarget.status || '').toUpperCase();
+                let timeStatusBaru = dataTarget.timeStatus || "";
+                let pemicuNotifStatus = false;
+
+                if (statusUpper !== statusSebelumnya) {
+                    if (statusUpper === 'DATANG' || statusUpper === 'PENDING') {
+                        timeStatusBaru = jamTampil;
+                        pemicuNotifStatus = true;
+                    } else {
+                        timeStatusBaru = "";
+                    }
+                }
+
+                localCacheData[index].status = statusUpper;
+                localCacheData[index].timeStatus = timeStatusBaru;
+                localStorage.setItem('database_jadwal', JSON.stringify(localCacheData));
+
+                // Update khusus field status & timeStatus saja di Firebase
+                try {
+                    const pathDriverFirebase = `master_jadwal/${stringHariFirebase}/list/${indeksListFirebase}`;
+                    const payloadStatusOnly = {
+                        status: statusUpper,
+                        timeStatus: timeStatusBaru
+                    };
+
+                    if (typeof db !== 'undefined' && db && db.ref) {
+                        await db.ref(pathDriverFirebase).update(payloadStatusOnly);
+                    } else if (typeof firebase !== 'undefined' && firebase.database) {
+                        await firebase.database().ref(pathDriverFirebase).update(payloadStatusOnly);
+                    }
+                } catch (err) {
+                    console.error("Gagal update status langsung ke Firebase:", err);
+                }
+
+                if (pemicuNotifStatus && typeof kirimBroadcastPush === 'function') {
+                    const namaDriver = dataTarget.driver || dataTarget.Driver || "Driver";
+                    const namaEkspedisi = dataTarget.ekspedisi || dataTarget.Ekspedisi || "-";
+                    const namaTujuan = dataTarget.kota || dataTarget.Kota || "-";
+                    kirimBroadcastPush(
+                        `STATUS ARMADA: ${statusUpper}`,
+                        `🚚 ${namaDriver} (${namaEkspedisi}) tujuan ${namaTujuan} status ${statusUpper} jam ${jamTampil}`,
+                        'logistik-update'
+                    );
+                }
+
+                if (typeof pilihJadwal === 'function') {
+                    pilihJadwal(konversiTgl(tglMentah));
+                }
+            }
+
+            if (typeof showToast === 'function') {
+                showToast(`Status diubah menjadi ${statusUpper}`, 'success');
+            }
+            if (typeof getarTombol === 'function') getarTombol();
+
+            tutupModal();
+        }
+
+        /**
+         * Mengambil nilai draft muat WH-1 atau WH-2 untuk armada yang sedang dibuka di modal
+         */
+        function ambilNilaiDraftMuatUntukAktif(whKey) {
+            const ctx = window._konteksModalUpdateStatus || {};
+            const keyHari = ctx.keyHari || '';
+            const idx = ctx.index;
+            const id = ctx.id || document.getElementById('edit-id')?.value || '';
+            const item = ctx.item || {};
+
+            const sumberMaster = window.dataMasterJadwal || window.masterJadwal || {};
+            const rawDraft = keyHari ? sumberMaster[keyHari]?.draft_muat : null;
+
+            const draftList = !rawDraft
+                ? []
+                : Array.isArray(rawDraft)
+                    ? rawDraft
+                    : Object.values(rawDraft);
+
+            const cocokDraft =
+                (idx !== null && idx !== undefined && !isNaN(parseInt(idx, 10)) && draftList[parseInt(idx, 10)]) ||
+                draftList.find((d) => d && id && String(d.id) === String(id)) ||
+                draftList.find((d) =>
+                    d &&
+                    String(d.nopol || '').trim().toUpperCase() === String(item.nopol || item.Nopol || '').trim().toUpperCase() &&
+                    String(d.driver || d.sopir || '').trim().toUpperCase() === String(item.driver || item.Driver || '').trim().toUpperCase()
+                ) ||
+                null;
+
+            if (!cocokDraft) return 0;
+            return whKey === 'wh1'
+                ? (Number(cocokDraft.wh1) || 0)
+                : (Number(cocokDraft.wh2) || 0);
+        }
+
+        /**
+         * Memperbarui teks info Draft Muat di modal sesuai status terkini
+         */
+        function refreshBadgeDraftMuatModal(statusUpper) {
+            const draftWh1 = ambilNilaiDraftMuatUntukAktif('wh1');
+            const draftWh2 = ambilNilaiDraftMuatUntukAktif('wh2');
+            const badgeDraft1 = document.getElementById('badge-draft-wh1');
+            const badgeDraft2 = document.getElementById('badge-draft-wh2');
+
+            if (badgeDraft1) {
+                badgeDraft1.textContent = draftWh1 > 0
+                    ? `Draft Muat: ${draftWh1.toLocaleString('id-ID')} Krt${statusUpper === 'DATANG' ? ' (klik qty utama)' : ' (aktif saat DATANG)'}`
+                    : '';
+            }
+            if (badgeDraft2) {
+                badgeDraft2.textContent = draftWh2 > 0
+                    ? `Draft Muat: ${draftWh2.toLocaleString('id-ID')} Krt${statusUpper === 'DATANG' ? ' (klik qty utama)' : ' (aktif saat DATANG)'}`
+                    : '';
+            }
+        }
+
+        /**
+         * Saat fokus di QTY MUAT UTAMA:
+         * - Hanya menyalin dari draft_muat jika status armada sudah 'DATANG' dan nilai saat ini 0.
+         * - Jika status masih 'BELUM' atau 'PENDING', jangan salin draft muat (kosongkan saja jika 0).
+         */
+        function handleFocusQtyMuatUtama(el, whKey) {
+            if (!el || el.readOnly || el.disabled) return;
+            const bersih = String(el.value || '').trim();
+            const angkaSaatIni = bersih === '' ? 0 : (parseInt(bersih, 10) || 0);
+
+            const ctx = window._konteksModalUpdateStatus || {};
+            const cacheIndex = Array.isArray(localCacheData) && ctx.id !== undefined
+                ? localCacheData.findIndex((item) => item && item.id == ctx.id)
+                : -1;
+            const statusTerakhir = String(
+                (cacheIndex !== -1 && localCacheData[cacheIndex]?.status) ||
+                ctx.status ||
+                ''
+            ).toUpperCase();
+
+            if (angkaSaatIni === 0) {
+                if (statusTerakhir === 'DATANG') {
+                    const nilaiDraft = ambilNilaiDraftMuatUntukAktif(whKey);
+                    if (nilaiDraft > 0) {
+                        el.value = String(nilaiDraft);
+                        el.dataset.disalinDariDraft = '1';
+                        setTimeout(() => {
+                            try { el.select(); } catch (_) {}
+                        }, 0);
+                        return;
+                    }
+                }
+                el.value = '';
+            }
+        }
+
+        function handleBlurQtyMuat(el) {
+            if (!el) return;
+            const bersih = String(el.value || '').trim();
+            el.value = bersih === '' ? '0' : String(Math.max(0, parseInt(bersih, 10) || 0));
+        }
+
+        /**
+         * 10. REVISI UTAMA: FUNGSI BUKA MODAL UPDATE STATUS & JUMLAH KARTON MUATAN
+         * Saat dibuka, qty tetap apa adanya (0 jika belum ada) dan otomatis menarik draft_muat
+         * dari Firebase bila belum dimuat, lalu menyalin saat fokus ke QTY MUAT UTAMA bila status DATANG.
+         */
+        async function bukaModalUpdate(id, driver, wh1, wh2, statusAktif, ekspedisi, kota, indexRender) {
+            const userLevel = (localStorage.getItem('userLevel') || '').toUpperCase();
+            const userDivisi = (localStorage.getItem('userDivisi') || '').toUpperCase();
+
+            document.getElementById('edit-id').value = id;
+
+            const btnSimpan = document.getElementById('btn-simpan-modal');
+            if (btnSimpan) {
+                btnSimpan.setAttribute('data-index-render', indexRender);
+            }
+
+            const cacheIndex = Array.isArray(localCacheData)
+                ? localCacheData.findIndex((item) => item && item.id == id)
+                : -1;
+            const dataLokal = cacheIndex !== -1 ? localCacheData[cacheIndex] : {};
+
+            let tglMentah = dataLokal.tglJadwal || dataLokal.tanggal || dataLokal.Tanggal || dataLokal.TGLJADWAL || "";
+            if (!tglMentah && id && String(id).includes('_')) {
+                tglMentah = String(id).split('_')[0];
+            }
+            const stringHariFirebase = "hari_" + String(tglMentah).replace(/\s/g, '').toUpperCase();
+            const indeksListFirebase = (indexRender !== null && indexRender !== undefined && !isNaN(parseInt(indexRender, 10)))
+                ? parseInt(indexRender, 10)
+                : (cacheIndex !== -1 ? cacheIndex : 0);
+
+            const statusUpper = String(statusAktif || dataLokal.status || 'BELUM').toUpperCase();
+
+            window._konteksModalUpdateStatus = {
+                id,
+                keyHari: stringHariFirebase,
+                index: indeksListFirebase,
+                status: statusUpper,
+                item: dataLokal
+            };
+
+            const nilaiWh1 = Number(wh1 ?? dataLokal.wh1 ?? 0) || 0;
+            const nilaiWh2 = Number(wh2 ?? dataLokal.wh2 ?? 0) || 0;
+
+            const nilaiWh1Tambahan = Number(dataLokal.wh1_tambahan ?? dataLokal.tambahan_wh1 ?? 0) || 0;
+            const nilaiWh1Titipan = Number(dataLokal.wh1_titipan ?? dataLokal.titipan_wh1 ?? 0) || 0;
+            const nilaiWh2Tambahan = Number(dataLokal.wh2_tambahan ?? dataLokal.tambahan_wh2 ?? 0) || 0;
+            const nilaiWh2Titipan = Number(dataLokal.wh2_titipan ?? dataLokal.titipan_wh2 ?? 0) || 0;
+
+            const inputWh1 = document.getElementById('val-wh1');
+            const inputWh1Tamb = document.getElementById('val-wh1-tambahan');
+            const inputWh1Titip = document.getElementById('val-wh1-titipan');
+
+            const inputWh2 = document.getElementById('val-wh2');
+            const inputWh2Tamb = document.getElementById('val-wh2-tambahan');
+            const inputWh2Titip = document.getElementById('val-wh2-titipan');
+
+            if (inputWh1) {
+                inputWh1.value = nilaiWh1;
+                delete inputWh1.dataset.disalinDariDraft;
+                inputWh1.setAttribute('onfocus', "handleFocusQtyMuatUtama(this, 'wh1')");
+                inputWh1.setAttribute('onblur', "handleBlurQtyMuat(this)");
+            }
+
+            if (inputWh2) {
+                inputWh2.value = nilaiWh2;
+                delete inputWh2.dataset.disalinDariDraft;
+                inputWh2.setAttribute('onfocus', "handleFocusQtyMuatUtama(this, 'wh2')");
+                inputWh2.setAttribute('onblur', "handleBlurQtyMuat(this)");
+            }
+
+            if (inputWh1Tamb) {
+                inputWh1Tamb.value = nilaiWh1Tambahan;
+                inputWh1Tamb.setAttribute('onfocus', "if(this.value === '0') this.value = '';");
+                inputWh1Tamb.setAttribute('onblur', "handleBlurQtyMuat(this)");
+            }
+            if (inputWh1Titip) {
+                inputWh1Titip.value = nilaiWh1Titipan;
+                inputWh1Titip.setAttribute('onfocus', "if(this.value === '0') this.value = '';");
+                inputWh1Titip.setAttribute('onblur', "handleBlurQtyMuat(this)");
+            }
+            if (inputWh2Tamb) {
+                inputWh2Tamb.value = nilaiWh2Tambahan;
+                inputWh2Tamb.setAttribute('onfocus', "if(this.value === '0') this.value = '';");
+                inputWh2Tamb.setAttribute('onblur', "handleBlurQtyMuat(this)");
+            }
+            if (inputWh2Titip) {
+                inputWh2Titip.value = nilaiWh2Titipan;
+                inputWh2Titip.setAttribute('onfocus', "if(this.value === '0') this.value = '';");
+                inputWh2Titip.setAttribute('onblur', "handleBlurQtyMuat(this)");
+            }
+
+            refreshBadgeDraftMuatModal(statusUpper);
+
+            // Jika draft_muat untuk hari ini belum ada di memori, ambil otomatis dari Firebase
+            const cekMaster = window.dataMasterJadwal || window.masterJadwal || {};
+            const butuhAmbilDraft = stringHariFirebase && stringHariFirebase !== 'hari_' && !cekMaster[stringHariFirebase]?.draft_muat;
+            const refMaster = typeof ambilRefMasterJadwal === 'function' ? ambilRefMasterJadwal() : null;
+
+            if (butuhAmbilDraft && refMaster) {
+                try {
+                    const snapDraft = await refMaster.child(`${stringHariFirebase}/draft_muat`).once('value');
+                    const valDraft = snapDraft.val();
+                    if (valDraft) {
+                        window.dataMasterJadwal = window.dataMasterJadwal || {};
+                        window.dataMasterJadwal[stringHariFirebase] = window.dataMasterJadwal[stringHariFirebase] || {};
+                        window.dataMasterJadwal[stringHariFirebase].draft_muat = valDraft;
+                        refreshBadgeDraftMuatModal(statusUpper);
+                    }
+                } catch (errDraft) {
+                    console.warn("Gagal memuat draft_muat otomatis saat buka modal:", errDraft);
+                }
+            }
+
+            if (typeof sinkronTampilanTombolStatusModal === 'function') {
+                sinkronTampilanTombolStatusModal(statusUpper);
+            }
+
+            let namaEkspedisi = ekspedisi;
+            let namaKota = kota;
+
+            if ((!namaEkspedisi || !namaKota) && cacheIndex !== -1) {
+                namaEkspedisi = namaEkspedisi || dataLokal.ekspedisi || dataLokal.Ekspedisi;
+                namaKota = namaKota || dataLokal.kota || dataLokal.Kota;
+            }
+
+            const infoLengkap = `Status : ${namaEkspedisi || '-'} | ${driver} | ${namaKota || '-'}`;
+            document.getElementById('modalSubtitle').innerText = infoLengkap;
+
+            document.getElementById('input-wh1').classList.add('hidden');
+            document.getElementById('input-wh2').classList.add('hidden');
+
+            if (btnSimpan) btnSimpan.classList.remove('hidden');
+
+            if (
+                userLevel === 'PENJ' || userLevel === 'TAMU' || userLevel === 'GUEST' ||
+                userDivisi === 'PENJ' || userDivisi === 'TAMU' || userDivisi === 'GUEST'
+            ) {
+                if (btnSimpan) btnSimpan.classList.add('hidden');
+                alert("Akses Ditolak: Level atau Divisi Anda tidak memiliki izin untuk mengubah data.");
+            } else if (userDivisi === 'ADMIN' || userLevel === 'SUPERUSER') {
+                document.getElementById('input-wh1').classList.remove('hidden');
+                document.getElementById('input-wh2').classList.remove('hidden');
+            } else if (userDivisi === 'WH-1' || userLevel === 'WH-1') {
+                document.getElementById('input-wh1').classList.remove('hidden');
+            } else if (userDivisi === 'WH-2' || userLevel === 'WH-2') {
+                document.getElementById('input-wh2').classList.remove('hidden');
+            } else {
+                if (btnSimpan) btnSimpan.classList.add('hidden');
+            }
+
+            const modal = document.getElementById('modalUpdate');
+            const wrapper = document.getElementById('modalStackWrapper');
+            const panel = document.getElementById('modalPanel');
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                if (wrapper) wrapper.classList.remove('translate-y-full');
+                else if (panel) panel.classList.remove('translate-y-full');
+            }, 10);
+
+            if (typeof getarTombol === 'function') getarTombol();
+            if (typeof aturVisibilitasChat === 'function') aturVisibilitasChat(true);
+        }
+
+        /**
+         * FUNGSI EKSEKUSI PENYIMPANAN QTY MUAT (UTAMA, TAMBAHAN, TITIPAN)
+         * Status kedatangan ditangani terpisah oleh tombol status cepat di atas modal.
+         */
+        async function simpanPerubahan(e) {
+            if (e) e.preventDefault();
+
+            const id = document.getElementById('edit-id').value;
+            const valWh1 = parseInt(document.getElementById('val-wh1')?.value, 10) || 0;
+            const valWh1Tamb = parseInt(document.getElementById('val-wh1-tambahan')?.value, 10) || 0;
+            const valWh1Titip = parseInt(document.getElementById('val-wh1-titipan')?.value, 10) || 0;
+
+            const valWh2 = parseInt(document.getElementById('val-wh2')?.value, 10) || 0;
+            const valWh2Tamb = parseInt(document.getElementById('val-wh2-tambahan')?.value, 10) || 0;
+            const valWh2Titip = parseInt(document.getElementById('val-wh2-titipan')?.value, 10) || 0;
+
+            const userLevel = (localStorage.getItem('userLevel') || '').toUpperCase();
+            const userDivisi = (localStorage.getItem('userDivisi') || '').toUpperCase();
+
+            const btnSimpan = document.getElementById('btn-simpan-modal');
+            const indexRenderAsli = btnSimpan ? parseInt(btnSimpan.getAttribute('data-index-render'), 10) : null;
+
+            const index = Array.isArray(localCacheData) ? localCacheData.findIndex((item) => item && item.id == id) : -1;
+
             if (index !== -1) {
                 const dataTarget = localCacheData[index];
 
-                // Proteksi Awal: Cek Blokir Akses Terlebih Dahulu
-                if (userLevel === 'PENJ' || userLevel === 'TAMU' || userLevel === 'GUEST' || 
-                    userDivisi === 'PENJ' || userDivisi === 'TAMU' || userDivisi === 'GUEST') {
+                if (
+                    userLevel === 'PENJ' || userLevel === 'TAMU' || userLevel === 'GUEST' ||
+                    userDivisi === 'PENJ' || userDivisi === 'TAMU' || userDivisi === 'GUEST'
+                ) {
                     alert("Akses Ditolak: Anda tidak memiliki izin untuk menyimpan data ini.");
-                    return; 
+                    return;
                 }
 
                 let tglMentah = dataTarget.tglJadwal || dataTarget.tanggal || dataTarget.Tanggal || dataTarget.TGLJADWAL || "";
-                if (!tglMentah && id && id.includes('_')) {
-                    tglMentah = id.split('_')[0]; 
+                if (!tglMentah && id && String(id).includes('_')) {
+                    tglMentah = String(id).split('_')[0];
                 }
-                
-                const stringHariFirebase = "hari_" + tglMentah.replace(/\s/g, '').toUpperCase(); 
-                
-                // SOLUSI UTAMA: Gunakan indexRenderAsli (urutan 0, 1, 2) dari penyaringan tanggal aktif, bukan index akumulasi global!
+
+                const stringHariFirebase = "hari_" + String(tglMentah).replace(/\s/g, '').toUpperCase();
                 const indeksListFirebase = (indexRenderAsli !== null && !isNaN(indexRenderAsli)) ? indexRenderAsli : index;
 
-                // Generate Waktu Sekarang (Format Jam Lokal - HH:MM)
                 const sekarang = new Date();
                 const jamTampil = sekarang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
 
-                // Variabel bantu untuk mendeteksi trigger notifikasi di akhir pemrosesan data
-                let pemicuNotifStatus = false;
                 let pemicuNotifWh1 = false;
                 let pemicuNotifWh2 = false;
 
-                // --- TAHAP 1: LOGIKA PROSES & TIMESTAMP GUARD ---
-                
-                // A. Waktu Kedatangan / Pending
-                if (selectedStatus !== dataTarget.status) {
-                    if (selectedStatus === 'DATANG' || selectedStatus === 'PENDING') {
-                        localCacheData[index].timeStatus = jamTampil;
-                    } else {
-                        localCacheData[index].timeStatus = ""; // Bersihkan jika balik ke Belum/Batal
-                    }
-                    // Trigger aktif jika status diubah ke PENDING atau DATANG
-                    if (selectedStatus === 'PENDING' || selectedStatus === 'DATANG') {
-                        pemicuNotifStatus = true;
-                    }
-                }
-                localCacheData[index].status = selectedStatus;
-                
-                // B. Alokasi Karton & Waktu Muat Gudang
-                if (userLevel === 'ADMIN' || userLevel === 'SUPERUSER' || userDivisi === 'ADMIN' || userDivisi === 'SUPERUSER') {
-                    if (valWh1 !== dataTarget.wh1) {
-                        localCacheData[index].wh1 = valWh1;
+                const totalWh1Baru = valWh1 + valWh1Tamb + valWh1Titip;
+                const totalWh2Baru = valWh2 + valWh2Tamb + valWh2Titip;
+
+                const isAdmin = (userLevel === 'ADMIN' || userLevel === 'SUPERUSER' || userDivisi === 'ADMIN' || userDivisi === 'SUPERUSER');
+                const isWh1 = (userDivisi === 'WH-1' || userLevel === 'WH-1');
+                const isWh2 = (userDivisi === 'WH-2' || userLevel === 'WH-2');
+
+                if (isAdmin || isWh1) {
+                    const prevTotal1 = Number(dataTarget.wh1 || 0);
+                    const prevTamb1 = Number(dataTarget.wh1_tambahan || 0);
+                    const prevTitip1 = Number(dataTarget.wh1_titipan || 0);
+
+                    if (
+                        totalWh1Baru !== prevTotal1 ||
+                        valWh1Tamb !== prevTamb1 ||
+                        valWh1Titip !== prevTitip1
+                    ) {
+                        localCacheData[index].wh1 = totalWh1Baru;
+                        localCacheData[index].wh1_utama = valWh1;
+                        localCacheData[index].wh1_tambahan = valWh1Tamb;
+                        localCacheData[index].wh1_titipan = valWh1Titip;
                         localCacheData[index].timeWh1 = jamTampil;
-                        if (valWh1 > 0) pemicuNotifWh1 = true;
-                    }
-                    if (valWh2 !== dataTarget.wh2) {
-                        localCacheData[index].wh2 = valWh2;
-                        localCacheData[index].timeWh2 = jamTampil;
-                        if (valWh2 > 0) pemicuNotifWh2 = true;
-                    }
-                } 
-                else if (userDivisi === 'WH-1' || userLevel === 'WH-1') {
-                    if (valWh1 !== dataTarget.wh1) {
-                        localCacheData[index].wh1 = valWh1;
-                        localCacheData[index].timeWh1 = jamTampil;
-                        if (valWh1 > 0) pemicuNotifWh1 = true;
-                    }
-                } 
-                else if (userDivisi === 'WH-2' || userLevel === 'WH-2') {
-                    if (valWh2 !== dataTarget.wh2) {
-                        localCacheData[index].wh2 = valWh2;
-                        localCacheData[index].timeWh2 = jamTampil;
-                        if (valWh2 > 0) pemicuNotifWh2 = true;
+                        if (totalWh1Baru > 0) pemicuNotifWh1 = true;
                     }
                 }
 
-                // Simpan hasil update ke LocalStorage perangkat
+                if (isAdmin || isWh2) {
+                    const prevTotal2 = Number(dataTarget.wh2 || 0);
+                    const prevTamb2 = Number(dataTarget.wh2_tambahan || 0);
+                    const prevTitip2 = Number(dataTarget.wh2_titipan || 0);
+
+                    if (
+                        totalWh2Baru !== prevTotal2 ||
+                        valWh2Tamb !== prevTamb2 ||
+                        valWh2Titip !== prevTitip2
+                    ) {
+                        localCacheData[index].wh2 = totalWh2Baru;
+                        localCacheData[index].wh2_utama = valWh2;
+                        localCacheData[index].wh2_tambahan = valWh2Tamb;
+                        localCacheData[index].wh2_titipan = valWh2Titip;
+                        localCacheData[index].timeWh2 = jamTampil;
+                        if (totalWh2Baru > 0) pemicuNotifWh2 = true;
+                    }
+                }
+
                 localStorage.setItem('database_jadwal', JSON.stringify(localCacheData));
 
-                // --- REVISI MURNI: TRIGGER REAL-TIME PUSH NOTIFICATION BACKGROUND (v3.6.1) ---
                 const namaDriver = dataTarget.driver || dataTarget.Driver || "Driver";
                 const namaEkspedisi = dataTarget.ekspedisi || dataTarget.Ekspedisi || "-";
                 const namaTujuan = dataTarget.kota || dataTarget.Kota || "-";
-                
-                // Mengalihkan kirimNotifikasiSistem internal ke fungsi global broadcast push server Google
+
                 if (typeof kirimBroadcastPush === 'function') {
-                    if (pemicuNotifStatus) {
-                        kirimBroadcastPush(
-                            `STATUS ARMADA: ${selectedStatus}`, 
-                            `🚚 ${namaDriver} (${namaEkspedisi}) tujuan ${namaTujuan} status ${selectedStatus} jam ${jamTampil}`,
-                            'logistik-update'
-                        );
-                    }
                     if (pemicuNotifWh1) {
                         kirimBroadcastPush(
-                            `WH-1 SELESAI MUAT`, 
-                            `📦 ${namaDriver} (${namaEkspedisi}) ${namaTujuan} selesai dimuat di WH-1 sebanyak ${valWh1} Karton jam ${jamTampil}`,
+                            `WH-1 SELESAI MUAT`,
+                            `📦 ${namaDriver} (${namaEkspedisi}) ${namaTujuan} selesai dimuat di WH-1 sebanyak ${localCacheData[index].wh1} Karton jam ${jamTampil}`,
                             'logistik-update'
                         );
                     }
                     if (pemicuNotifWh2) {
                         kirimBroadcastPush(
-                            `WH-2 SELESAI MUAT`, 
-                            `📦 ${namaDriver} (${namaEkspedisi}) ${namaTujuan} selesai dimuat di WH-2 sebanyak ${valWh2} Karton jam ${jamTampil}`,
+                            `WH-2 SELESAI MUAT`,
+                            `📦 ${namaDriver} (${namaEkspedisi}) ${namaTujuan} selesai dimuat di WH-2 sebanyak ${localCacheData[index].wh2} Karton jam ${jamTampil}`,
                             'logistik-update'
                         );
                     }
                 }
 
-                // Feedback Instan Antarmuka
                 tutupModal();
                 if (typeof pilihJadwal === 'function') {
-                    pilihJadwal(konversiTgl(tglMentah)); 
+                    pilihJadwal(konversiTgl(tglMentah));
                 }
                 if (typeof getarTombol === 'function') getarTombol();
 
-                // --- TAHAP 2: UPDATE DIRECT KE FIREBASE REALTIME ---
                 try {
                     const pathDriverFirebase = `master_jadwal/${stringHariFirebase}/list/${indeksListFirebase}`;
-                    
-                    // Masukkan seluruh data mutakhir termasuk field timestamp baru ke payload
-                    let updatePayload = {
-                        status: localCacheData[index].status,
+                    const updatePayload = {
                         wh1: localCacheData[index].wh1 || 0,
+                        wh1_utama: localCacheData[index].wh1_utama ?? valWh1,
+                        wh1_tambahan: localCacheData[index].wh1_tambahan ?? valWh1Tamb,
+                        wh1_titipan: localCacheData[index].wh1_titipan ?? valWh1Titip,
                         wh2: localCacheData[index].wh2 || 0,
-                        timeStatus: localCacheData[index].timeStatus || "",
+                        wh2_utama: localCacheData[index].wh2_utama ?? valWh2,
+                        wh2_tambahan: localCacheData[index].wh2_tambahan ?? valWh2Tamb,
+                        wh2_titipan: localCacheData[index].wh2_titipan ?? valWh2Titip,
                         timeWh1: localCacheData[index].timeWh1 || "",
                         timeWh2: localCacheData[index].timeWh2 || ""
                     };
 
-                    if (typeof db !== 'undefined' && db.ref) {
+                    if (typeof db !== 'undefined' && db && db.ref) {
                         await db.ref(pathDriverFirebase).update(updatePayload);
                     } else if (typeof firebase !== 'undefined' && firebase.database) {
                         await firebase.database().ref(pathDriverFirebase).update(updatePayload);
                     }
-                    
-                    console.log("Firebase sukses diperbarui pada jalur: " + pathDriverFirebase);
 
+                    console.log("Firebase sukses diperbarui pada jalur: " + pathDriverFirebase);
                 } catch (fbError) {
                     console.error("Gagal memperbarui data ke Firebase: ", fbError);
                 }
 
-                // --- TAHAP 3: TERUSKAN KE ANTREAN SINKRONISASI SPREADSHEET ---
                 const stringEkspedisi = (dataTarget.ekspedisi || dataTarget.Ekspedisi || "").toString();
                 const stringNopol = (dataTarget.nopol || dataTarget.Nopol || "").toString();
                 const stringKota = (dataTarget.kota || dataTarget.Kota || "").toString();
                 const stringDriver = (dataTarget.driver || dataTarget.Driver || "").toString();
-                
+
                 const kunciUnikRute = (stringEkspedisi + stringNopol + stringKota + stringDriver).toLowerCase().replace(/\s/g, '');
 
                 if (typeof tambahKeAntreanSync === 'function') {
                     tambahKeAntreanSync(
-                        id, 
-                        localCacheData[index].status, 
-                        localCacheData[index].wh1, 
-                        localCacheData[index].wh2, 
+                        id,
+                        localCacheData[index].status,
+                        localCacheData[index].wh1,
+                        localCacheData[index].wh2,
                         kunciUnikRute
                     );
                 }
-
             } else {
                 alert("Data tidak ditemukan di database lokal!");
             }
@@ -5820,41 +6173,43 @@
 
         /**
          * 12. REVISI: FUNGSI TUTUP PANEL MODAL UPDATE (SAFE STATE RESET)
-         * Menutup panel modal dengan animasi slide-down dan membersihkan sisa input form.
          */
         function tutupModal() {
+            const wrapper = document.getElementById('modalStackWrapper');
             const panel = document.getElementById('modalPanel');
-            
-            // 1. Jalankan animasi slide-down ke bawah layar
-            if (panel) {
+
+            if (wrapper) {
+                wrapper.classList.add('translate-y-full');
+            } else if (panel) {
                 panel.classList.add('translate-y-full');
             }
-            
-            // Berikan respons getar halus saat tombol tutup ditekan
+
             if (typeof getarTombol === 'function') {
                 getarTombol();
             }
-            
-            // 2. Tunggu transisi selesai (300ms), lalu sembunyikan container modal utama
-            setTimeout(() => { 
+
+            setTimeout(() => {
                 const modalUpdate = document.getElementById('modalUpdate');
                 if (modalUpdate) {
                     modalUpdate.classList.add('hidden');
-                } 
-                
-                // 3. PROTEKSI VISUAL: Bersihkan sisa data input agar tidak bocor ke driver berikutnya
-                const inputWh1 = document.getElementById('val-wh1');
-                const inputWh2 = document.getElementById('val-wh2');
+                }
+
+                const fieldsReset = [
+                    'val-wh1', 'val-wh1-tambahan', 'val-wh1-titipan',
+                    'val-wh2', 'val-wh2-tambahan', 'val-wh2-titipan'
+                ];
+                fieldsReset.forEach((idField) => {
+                    const el = document.getElementById(idField);
+                    if (el) el.value = 0;
+                });
+
                 const idEdit = document.getElementById('edit-id');
-                
-                if (inputWh1) inputWh1.value = 0;
-                if (inputWh2) inputWh2.value = 0;
                 if (idEdit) idEdit.value = "";
-                
             }, 300);
 
-            // TAMBAHAN PROTEKSI v0.1.8: Sembunyikan chat saat modal terbuka
-            aturVisibilitasChat(false);
+            if (typeof aturVisibilitasChat === 'function') {
+                aturVisibilitasChat(false);
+            }
         }
 
         // OTOMATIS: Pasang fungsi getar ke SEMUA elemen interaktif yang bisa diklik
@@ -5886,7 +6241,7 @@
         function getSimbolStatusWA(statusRaw) {
             const st = String(statusRaw || "BELUM").toUpperCase();
             if (st === "DATANG") return "✅";
-            if (st === "PENDING") return "⏳";
+            if (st === "PENDING") return "⚠️";
             return "❌";
         }
 
@@ -6464,6 +6819,40 @@
         elTotal.textContent = (v1 + v2).toLocaleString('id-ID');
     }
 
+    function handleFocusAngkaMuat(el) {
+        if (!el || el.disabled) return;
+        const bersih = String(el.value || '').trim();
+        if (bersih === '' || Number(bersih) === 0) {
+            el.dataset.nilaiSebelumFocus = String(Number(bersih) || 0);
+            el.value = '';
+        } else {
+            el.dataset.nilaiSebelumFocus = String(parseInt(bersih, 10) || 0);
+        }
+    }
+
+    function handleInputAngkaMuat(el, idx) {
+        if (!el) return;
+        let raw = String(el.value || '');
+        if (raw.length > 1 && /^0\d+/.test(raw)) {
+            raw = String(parseInt(raw, 10) || 0);
+            el.value = raw;
+        }
+        updatePreviewTotalArmada(idx);
+    }
+
+    function handleBlurAngkaMuat(el, keyHari, idx, whKey) {
+        if (!el || el.disabled) return;
+        const raw = String(el.value || '').trim();
+        const angkaFinal = raw === '' ? 0 : Math.max(0, parseInt(raw, 10) || 0);
+        el.value = String(angkaFinal);
+        updatePreviewTotalArmada(idx);
+
+        const nilaiAwal = parseInt(el.dataset.nilaiSebelumFocus ?? '0', 10) || 0;
+        if (angkaFinal !== nilaiAwal) {
+            simpanMuatWH(keyHari, idx, whKey, angkaFinal);
+        }
+    }
+
     function renderLaporanDraftMuat() {
         initAksesLaporan();
         const selectEl = document.getElementById('laporan-select-tanggal');
@@ -6560,8 +6949,10 @@
                                 </label>
                                 ${!bolehEdit1 ? '<i class="fa-solid fa-lock text-[8px] text-slate-400 shrink-0" title="Terkunci untuk divisi Anda"></i>' : ''}
                             </div>
-                            <input type="number" min="0" id="input-wh1-${idx}" value="${val1}" ${disabled1Attr}
-                                oninput="updatePreviewTotalArmada(${idx})"
+                            <input type="number" min="0" step="1" id="input-wh1-${idx}" value="${val1}" ${disabled1Attr}
+                                onfocus="handleFocusAngkaMuat(this)"
+                                oninput="handleInputAngkaMuat(this, ${idx})"
+                                onblur="handleBlurAngkaMuat(this, '${keyHari}', ${idx}, 'wh1')"
                                 onchange="simpanMuatWH('${keyHari}', ${idx}, 'wh1', this.value)"
                                 class="w-full rounded-lg border px-1.5 sm:px-2.5 py-1 text-xs sm:text-sm font-black outline-none transition-all ${inputWh1Class}">
                             <p class="text-[8px] sm:text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-1">
@@ -6577,8 +6968,10 @@
                                 </label>
                                 ${!bolehEdit2 ? '<i class="fa-solid fa-lock text-[8px] text-slate-400 shrink-0" title="Terkunci untuk divisi Anda"></i>' : ''}
                             </div>
-                            <input type="number" min="0" id="input-wh2-${idx}" value="${val2}" ${disabled2Attr}
-                                oninput="updatePreviewTotalArmada(${idx})"
+                            <input type="number" min="0" step="1" id="input-wh2-${idx}" value="${val2}" ${disabled2Attr}
+                                onfocus="handleFocusAngkaMuat(this)"
+                                oninput="handleInputAngkaMuat(this, ${idx})"
+                                onblur="handleBlurAngkaMuat(this, '${keyHari}', ${idx}, 'wh2')"
                                 onchange="simpanMuatWH('${keyHari}', ${idx}, 'wh2', this.value)"
                                 class="w-full rounded-lg border px-1.5 sm:px-2.5 py-1 text-xs sm:text-sm font-black outline-none transition-all ${inputWh2Class}">
                             <p class="text-[8px] sm:text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-1">
