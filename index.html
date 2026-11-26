@@ -4178,43 +4178,72 @@
 
             if (!input || !input.files[0]) return alert("Silakan pilih file terlebih dahulu!");
 
-            const originalBtnText = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> SEDANG MENGIRIM JADWAL KE SERVER...';
-            btn.disabled = true;
+            const originalBtnText = btn ? btn.innerHTML : "";
+            if (btn) {
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> SEDANG MENGIRIM JADWAL KE SERVER...';
+                btn.disabled = true;
+            }
+
+            const resetTombol = () => {
+                if (btn) {
+                    btn.innerHTML = originalBtnText;
+                    btn.disabled = false;
+                }
+            };
+
+            const tanyaKonfirmasi = async (pesan) => {
+                if (typeof window.jadiloDialog === 'function') {
+                    return await window.jadiloDialog('confirm', pesan);
+                }
+                return window.confirm(pesan);
+            };
+
+            const normTeks = (v) => String(v ?? "").trim().toUpperCase().replace(/\s+/g, " ");
+            const buatSignatureRow = (it = {}) => [
+                bersihkanTandaBacaDanSpasi(it.ekspedisi),
+                bersihkanTandaBacaDanSpasi(it.nopol),
+                bersihkanTandaBacaDanSpasi(it.jenisMobil || it.jenis_mobil || "-"),
+                bersihkanTandaBacaDanSpasi(it.tujuan || "-"),
+                bersihkanTandaBacaDanSpasi(it.kota),
+                normalisasiNamaDriver(it.driver)
+            ].join("||");
 
             const reader = new FileReader();
             reader.onload = async function(e) {
                 try {
                     const dataArr = new Uint8Array(e.target.result);
-                    const wb = XLSX.read(dataArr, {type: 'array'});
+                    const wb = XLSX.read(dataArr, { type: 'array' });
                     const ws = wb.Sheets[wb.SheetNames[0]];
-                    const rowsRaw = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ""});
+                    const rowsRaw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
 
                     // --- A. CARI TANGGAL JADWAL DARI EXCEL ---
                     let tglJadwalExcel = "";
                     for (let r = 0; r < rowsRaw.length; r++) {
                         for (let c = 0; c < rowsRaw[r].length; c++) {
-                            let val = String(rowsRaw[r][c] || "").trim();
+                            const val = String(rowsRaw[r][c] || "").trim();
                             if (val.toUpperCase().includes("TANGGAL :")) {
-                                tglJadwalExcel = val.split(":")[1].trim();
+                                tglJadwalExcel = val.split(":").slice(1).join(":").trim();
                                 break;
                             }
                         }
-                        if(tglJadwalExcel) break;
+                        if (tglJadwalExcel) break;
                     }
-                    if(!tglJadwalExcel) throw new Error("Teks 'TANGGAL :' tidak ditemukan di dalam file Excel!");
+                    if (!tglJadwalExcel) throw new Error("Teks 'TANGGAL :' tidak ditemukan di dalam file Excel!");
 
-                    // Format penamaan unik node tanggal (contoh: 'hari_16_05_2026' atau 'hari_16052026')
                     const nodeTanggal = tglJadwalExcel.replace(/\s/g, '').replace(/[^a-zA-Z0-9]/g, '_');
 
                     // --- B. AMBIL DATA LAMA LANGSUNG DARI CLOUD DATABASE ---
-                    const snapshot = await database.ref(`master_jadwal/hari_${nodeTanggal}/list`).once('value');
-                    let rawSnapshotValue = snapshot.val();
-                    
-                    let dataFinal = [];
-                    if (rawSnapshotValue) {
-                        dataFinal = Array.isArray(rawSnapshotValue) ? rawSnapshotValue : Object.values(rawSnapshotValue);
-                    }
+                    const dbRef = (typeof database !== "undefined" && database)
+                        ? database
+                        : ((typeof db !== "undefined" && db) ? db : null);
+                    if (!dbRef) throw new Error("Koneksi Firebase belum siap.");
+
+                    const snapshot = await dbRef.ref(`master_jadwal/hari_${nodeTanggal}/list`).once('value');
+                    const rawSnapshotValue = snapshot.val();
+
+                    const dataLama = rawSnapshotValue
+                        ? (Array.isArray(rawSnapshotValue) ? rawSnapshotValue.filter(Boolean) : Object.values(rawSnapshotValue).filter(Boolean))
+                        : [];
 
                     // --- C. CARI AMBANG AWAL BARIS DATA (HEADER DETECTOR) ---
                     let startRowIndex = -1;
@@ -4227,107 +4256,150 @@
                     }
                     if (startRowIndex === -1) throw new Error("Header kolom 'EXPEDISI' tidak ditemukan!");
 
-                    // --- D. PROSES INTEGRASI & MERGE DATA EXCEL ---
+                    // --- D. SUSUN KANDIDAT BARIS DARI EXCEL ---
+                    const kandidatExcel = [];
                     for (let i = startRowIndex; i < rowsRaw.length; i++) {
                         const row = rowsRaw[i];
                         if (!row) continue;
 
-                        const ekspedisi = String(row[1] || "").trim();
-                        const nopol     = String(row[2] || "").trim();
-                        const kota      = String(row[5] || "").trim();
-                        const driver    = String(row[6] || "").trim();
+                        const ekspedisi  = normTeks(row[1]);
+                        const nopol      = normTeks(row[2]);
+                        const jenisMobil = normTeks(row[3]);
+                        const tujuan     = normTeks(row[4]);
+                        const kota       = normTeks(row[5]);
+                        const driver     = normTeks(row[6]);
 
-                        // Validasi baris: jika pengemudi atau nomor polisi tersedia, proses baris tersebut
-                        if (driver !== "" || nopol !== "") { 
-                            const itemBaru = {
-                                id: nodeTanggal + "_" + i, 
-                                ekspedisi: ekspedisi,
-                                nopol:     nopol,
-                                kota:      kota,
-                                driver:    driver,
+                        if (driver !== "" || nopol !== "") {
+                            kandidatExcel.push({
+                                id: nodeTanggal + "_" + i,
+                                ekspedisi: ekspedisi || "-",
+                                nopol: nopol,
+                                jenisMobil: jenisMobil || "-",
+                                jenis_mobil: jenisMobil || "-",
+                                tujuan: tujuan || "-",
+                                kota: kota || "-",
+                                driver: driver || "-",
                                 tglJadwal: tglJadwalExcel,
-                                isRevisi:  false,
-                                status:    "BELUM",
+                                isRevisi: false,
+                                status: "BELUM",
                                 wh1: 0,
                                 wh2: 0
-                            };
-
-                            const idxExist = dataFinal.findIndex(old => old && String(old.id) === String(itemBaru.id));
-
-                            if (idxExist !== -1) {
-                                // Jika data ID sudah ada, cek apakah terjadi perubahan isi dari admin
-                                const dLama = dataFinal[idxExist];
-                                const apakahAdaPerubahan = 
-                                    dLama.driver !== itemBaru.driver || 
-                                    dLama.nopol !== itemBaru.nopol || 
-                                    dLama.ekspedisi !== itemBaru.ekspedisi ||
-                                    dLama.kota !== itemBaru.kota;
-
-                                if (apakahAdaPerubahan) {
-                                    // Amankan status pengerjaan driver lama agar tidak ter-reset kembali ke "BELUM"
-                                    dataFinal[idxExist] = { 
-                                        ...dLama, 
-                                        ...itemBaru, 
-                                        isRevisi: true,
-                                        status: dLama.status || "BELUM" 
-                                    };
-                                }
-                            } else {
-                                // Jika benar-benar data driver baru, masukkan ke dalam daftar
-                                dataFinal.push(itemBaru);
-                            }
+                            });
                         }
                     }
 
-                    // Pembersihan total dari data kosong akibat indeks melompat
-                    dataFinal = dataFinal.filter(item => item !== null);
+                    if (!kandidatExcel.length) {
+                        throw new Error("Tidak ada baris data driver atau nomor polisi yang valid di Excel!");
+                    }
 
-                    // --- E. SINKRONISASI UTAMA: SET DIREK KE FIREBASE SERVER ---
-                    await database.ref(`master_jadwal/hari_${nodeTanggal}`).set({
-                        info: { 
-                            tanggal: tglJadwalExcel, 
-                            upload_at: new Date().toLocaleString('id-ID') 
+                    // --- E. EVALUASI KESAMAAN NAMA & REVISI DATA BARU ---
+                    const { jumlahRevisiBaru, mapRevisiByBaruIdx } = evaluasiRevisiBaris(dataLama, kandidatExcel);
+
+                    if (dataLama.length > 0 && jumlahRevisiBaru === 0) {
+                        const setujuUpdate = await tanyaKonfirmasi(
+                            `Jadwal tanggal ${tglJadwalExcel} sudah ada apakah akan diperbarui?`
+                        );
+                        if (setujuUpdate !== true) {
+                            resetTombol();
+                            return;
+                        }
+                    } else if (dataLama.length > 0 && jumlahRevisiBaru > 0) {
+                        const setujuRevisi = await tanyaKonfirmasi(
+                            `Ada ${jumlahRevisiBaru} data driver baru pada tujuan yang sama apakah akan direvisi?`
+                        );
+                        if (setujuRevisi !== true) {
+                            resetTombol();
+                            return;
+                        }
+                    }
+
+                    // --- F. INTEGRASI & MERGE DATA EXCEL ---
+                    const dataFinal = [...dataLama];
+
+                    kandidatExcel.forEach((itemBaru, idxBaru) => {
+                        const infoCocok = mapRevisiByBaruIdx.get(idxBaru) || { idxLama: -1, isRevisi: false };
+                        const idxLama = infoCocok.idxLama;
+                        const isRevBaru = infoCocok.isRevisi;
+
+                        if (idxLama !== -1 && dataFinal[idxLama]) {
+                            const dLama = dataFinal[idxLama];
+                            const samaPersis = buatSignatureRow(dLama) === buatSignatureRow(itemBaru);
+                            dataFinal[idxLama] = {
+                                ...dLama,
+                                ekspedisi: itemBaru.ekspedisi,
+                                nopol: itemBaru.nopol,
+                                jenisMobil: itemBaru.jenisMobil,
+                                jenis_mobil: itemBaru.jenis_mobil,
+                                tujuan: itemBaru.tujuan,
+                                kota: itemBaru.kota,
+                                driver: itemBaru.driver,
+                                tglJadwal: itemBaru.tglJadwal,
+                                isRevisi: isRevBaru ? true : (samaPersis ? false : Boolean(dLama.isRevisi)),
+                                status: dLama.status || "BELUM"
+                            };
+                        } else {
+                            dataFinal.push({
+                                ...itemBaru,
+                                isRevisi: isRevBaru ? true : false
+                            });
+                        }
+                    });
+
+                    // --- G. SINKRONISASI UTAMA: SET DIREK KE FIREBASE SERVER ---
+                    await dbRef.ref(`master_jadwal/hari_${nodeTanggal}`).set({
+                        info: {
+                            tanggal: tglJadwalExcel,
+                            upload_at: new Date().toLocaleString('id-ID')
                         },
                         list: dataFinal
                     });
 
+                    if (window.dataMasterJadwal) {
+                        window.dataMasterJadwal[`hari_${nodeTanggal}`] = {
+                            ...(window.dataMasterJadwal[`hari_${nodeTanggal}`] || {}),
+                            info: {
+                                tanggal: tglJadwalExcel,
+                                upload_at: new Date().toLocaleString('id-ID')
+                            },
+                            list: dataFinal
+                        };
+                    }
+
                     console.log("Jadwal sukses di-publish ke Firebase Server.");
 
-                    // --- F. CADANGAN LOG: KIRIM LOG ARSIP SPREADSHEET DI LATAR BELAKANG ---
-                    fetch(WEB_APP_URL, {
-                        method: "POST",
-                        mode: "no-cors", 
-                        headers: { "Content-Type": "text/plain" },
-                        body: JSON.stringify({ 
-                            action: "sync_clean", 
-                            data: dataFinal, 
-                            tanggal: tglJadwalExcel 
-                        })
-                    }).catch(err => console.warn("Sinkronisasi latar belakang Spreadsheet tertunda, data Firebase dijamin aman:", err));
+                    // --- H. CADANGAN LOG: KIRIM LOG ARSIP SPREADSHEET DI LATAR BELAKANG ---
+                    if (typeof WEB_APP_URL !== "undefined" && WEB_APP_URL) {
+                        fetch(WEB_APP_URL, {
+                            method: "POST",
+                            mode: "no-cors",
+                            headers: { "Content-Type": "text/plain" },
+                            body: JSON.stringify({
+                                action: "sync_clean",
+                                data: dataFinal,
+                                tanggal: tglJadwalExcel
+                            })
+                        }).catch(err => console.warn("Sinkronisasi latar belakang Spreadsheet tertunda, data Firebase dijamin aman:", err));
+                    }
 
-                    // --- G. FINISHING & UI RESETS ---
+                    // --- I. FINISHING & UI RESETS ---
                     alert("SUKSES: Jadwal Baru Berhasil Ter-Publish.");
-                    
+
                     input.value = "";
                     if (statusText) {
                         statusText.innerText = "Pilih file jadwal (.ods / .xlsx)";
                         statusText.classList.replace('text-blue-600', 'text-slate-400');
                     }
 
-                    const modalUpload = document.getElementById('upload-content'); 
+                    const modalUpload = document.getElementById('upload-content');
                     if (modalUpload) modalUpload.classList.add('hidden');
 
-                    // Langsung paksa aplikasi membuka tab jadwal dan me-refresh data realtime
                     if (typeof switchTab === 'function') switchTab('jadwal');
                     if (typeof loadJadwal === 'function') loadJadwal();
 
                 } catch (error) {
                     alert("PROSES GAGAL: " + error.message);
                 } finally {
-                    if (btn) {
-                        btn.innerHTML = originalBtnText;
-                        btn.disabled = false;
-                    }
+                    resetTombol();
                 }
             };
             reader.readAsArrayBuffer(input.files[0]);
@@ -4838,6 +4910,113 @@
             renderPreviewOCR();
         }
 
+        function bersihkanTandaBacaDanSpasi(v) {
+            return String(v ?? "")
+                .toUpperCase()
+                .replace(/[“”"'.,\-_/\\()]+/g, " ")
+                .replace(/\s+/g, " ")
+                .trim();
+        }
+
+        function normalisasiNamaDriver(v) {
+            return bersihkanTandaBacaDanSpasi(v)
+                .replace(/^(BP|BPK|PAK|BU|IBU)\s+/g, "")
+                .trim();
+        }
+
+        function kunciTujuanKotaBersih(it = {}) {
+            return bersihkanTandaBacaDanSpasi(it.tujuan || it.kota || "");
+        }
+
+        function cariKecocokanBarisLama(listLama, itemBaru) {
+            if (!Array.isArray(listLama) || !listLama.length) return -1;
+
+            const namaBaru = normalisasiNamaDriver(itemBaru.driver);
+            const nopolBaru = bersihkanTandaBacaDanSpasi(itemBaru.nopol);
+            const tkBaru = kunciTujuanKotaBersih(itemBaru);
+
+            if (namaBaru && namaBaru !== "-") {
+                const idxNama = listLama.findIndex(old => {
+                    if (!old) return false;
+                    const namaLama = normalisasiNamaDriver(old.driver);
+                    if (!namaLama || namaLama === "-") return false;
+                    if (namaLama === namaBaru) return true;
+                    const tkLama = kunciTujuanKotaBersih(old);
+                    if (tkBaru && tkLama === tkBaru && (namaLama.includes(namaBaru) || namaBaru.includes(namaLama))) {
+                        return true;
+                    }
+                    return false;
+                });
+                if (idxNama !== -1) return idxNama;
+            }
+
+            if (nopolBaru) {
+                const idxNopolTk = listLama.findIndex(old => {
+                    if (!old) return false;
+                    return bersihkanTandaBacaDanSpasi(old.nopol) === nopolBaru &&
+                        (!tkBaru || kunciTujuanKotaBersih(old) === tkBaru);
+                });
+                if (idxNopolTk !== -1) return idxNopolTk;
+            }
+
+            return listLama.findIndex(old => old && String(old.id) === String(itemBaru.id));
+        }
+
+        function evaluasiRevisiBaris(dataLama, kandidatBaru) {
+            const dataPertamaPerTujuan = [];
+            dataLama.forEach((old) => {
+                if (!old) return;
+                const tk = kunciTujuanKotaBersih(old);
+                if (tk && !dataPertamaPerTujuan.some(x => kunciTujuanKotaBersih(x) === tk)) {
+                    dataPertamaPerTujuan.push(old);
+                }
+            });
+
+            let jumlahRevisiBaru = 0;
+            const mapRevisiByBaruIdx = new Map();
+
+            kandidatBaru.forEach((itemBaru, idxBaru) => {
+                const idxLama = cariKecocokanBarisLama(dataLama, itemBaru);
+                const dLama = idxLama !== -1 ? dataLama[idxLama] : null;
+
+                const namaBaru = normalisasiNamaDriver(itemBaru.driver);
+                const namaLama = dLama ? normalisasiNamaDriver(dLama.driver) : "";
+                const tkBaru = kunciTujuanKotaBersih(itemBaru);
+                const dataPertama = dataPertamaPerTujuan.find(x => kunciTujuanKotaBersih(x) === tkBaru);
+
+                const expBaru = bersihkanTandaBacaDanSpasi(itemBaru.ekspedisi);
+                const nopolBaru = bersihkanTandaBacaDanSpasi(itemBaru.nopol);
+
+                if (dLama && namaBaru && namaLama === namaBaru) {
+                    mapRevisiByBaruIdx.set(idxBaru, { idxLama, isRevisi: false });
+                    return;
+                }
+
+                const bedaDariLama = dLama
+                    ? (namaBaru !== namaLama ||
+                       bersihkanTandaBacaDanSpasi(dLama.ekspedisi) !== expBaru ||
+                       bersihkanTandaBacaDanSpasi(dLama.nopol) !== nopolBaru)
+                    : false;
+
+                const bedaDariPertama = dataPertama
+                    ? (normalisasiNamaDriver(dataPertama.driver) !== namaBaru ||
+                       bersihkanTandaBacaDanSpasi(dataPertama.ekspedisi) !== expBaru ||
+                       bersihkanTandaBacaDanSpasi(dataPertama.nopol) !== nopolBaru)
+                    : false;
+
+                const tujuanSamaAdaDiLama = tkBaru && dataLama.some(old => old && kunciTujuanKotaBersih(old) === tkBaru);
+
+                if ((dLama && bedaDariLama) || (!dLama && tujuanSamaAdaDiLama && bedaDariPertama)) {
+                    jumlahRevisiBaru++;
+                    mapRevisiByBaruIdx.set(idxBaru, { idxLama, isRevisi: true });
+                } else {
+                    mapRevisiByBaruIdx.set(idxBaru, { idxLama, isRevisi: false });
+                }
+            });
+
+            return { jumlahRevisiBaru, mapRevisiByBaruIdx };
+        }
+
         async function simpanHasilOCRKeServer() {
             const tglInput = document.getElementById('ocr-tgl-jadwal');
             const tglJadwalFoto = tglInput ? tglInput.value.trim().toUpperCase() : "";
@@ -4861,15 +5040,12 @@
                 }
             };
 
-            const normalisasiTeksBanding = (v) => String(v ?? "").trim().toUpperCase().replace(/\s+/g, " ");
-            const buatSignatureItem = (it = {}) => [
-                normalisasiTeksBanding(it.ekspedisi || it.Ekspedisi || "-"),
-                normalisasiTeksBanding(it.nopol || it.Nopol || ""),
-                normalisasiTeksBanding(it.jenisMobil || it.jenis_mobil || it.JENIS_MOBIL || "-"),
-                normalisasiTeksBanding(it.tujuan || it.Tujuan || it.TUJUAN || "-"),
-                normalisasiTeksBanding(it.kota || it.Kota || "-"),
-                normalisasiTeksBanding(it.driver || it.Driver || "-")
-            ].join("||");
+            const tanyaConfirm = async (pesan) => {
+                if (typeof window.jadiloDialog === 'function') {
+                    return await window.jadiloDialog('confirm', pesan);
+                }
+                return window.confirm(pesan);
+            };
 
             try {
                 const nodeTanggal = tglJadwalFoto.replace(/\s/g, '').replace(/[^a-zA-Z0-9]/g, '_');
@@ -4913,78 +5089,55 @@
                     return alert("Tidak ada baris armada valid (isi Nopol atau Driver) untuk disimpan.");
                 }
 
-                // Cek apakah ada perbedaan pada salah satu item di tanggal yang sama
-                let adaPerbedaanPadaTanggal = false;
-                if (dataLamaList.length !== kandidatValid.length) {
-                    adaPerbedaanPadaTanggal = true;
-                } else {
-                    for (let i = 0; i < kandidatValid.length; i++) {
-                        const baru = kandidatValid[i];
-                        const lamaById = dataLamaList.find(old => old && String(old.id) === String(baru.id));
-                        const lama = lamaById || dataLamaList[i];
+                const { jumlahRevisiBaru, mapRevisiByBaruIdx } = evaluasiRevisiBaris(dataLamaList, kandidatValid);
 
-                        if (!lama || buatSignatureItem(lama) !== buatSignatureItem(baru)) {
-                            adaPerbedaanPadaTanggal = true;
-                            break;
-                        }
-                    }
-                }
-
-                // Jika sudah ada data di tanggal tersebut dan semuanya sama -> minta konfirmasi perbarui
-                if (dataLamaList.length > 0 && !adaPerbedaanPadaTanggal) {
-                    const pesanKonfirmasi = `Seluruh data jadwal untuk tanggal ${tglJadwalFoto} sudah ada dan sama. Apakah data akan diperbarui?`;
-                    const setuju = await (
-                        typeof window.jadiloDialog === 'function'
-                            ? window.jadiloDialog('confirm', pesanKonfirmasi)
-                            : Promise.resolve(window.confirm(pesanKonfirmasi))
+                if (dataLamaList.length > 0 && jumlahRevisiBaru === 0) {
+                    const setuju = await tanyaConfirm(
+                        `Jadwal tanggal ${tglJadwalFoto} sudah ada apakah akan diperbarui?`
                     );
-
+                    if (setuju !== true) {
+                        resetTombol();
+                        return;
+                    }
+                } else if (dataLamaList.length > 0 && jumlahRevisiBaru > 0) {
+                    const setuju = await tanyaConfirm(
+                        `Ada ${jumlahRevisiBaru} data driver baru pada tujuan yang sama apakah akan direvisi?`
+                    );
                     if (setuju !== true) {
                         resetTombol();
                         return;
                     }
                 }
 
-                // Jika ada perbedaan pada salah satu data di tanggal yang sama -> tandai isRevisi: true
-                let dataFinal = [...dataLamaList];
+                const dataFinal = [...dataLamaList];
 
-                kandidatValid.forEach((itemBaru) => {
-                    const idxExist = dataFinal.findIndex(old => old && String(old.id) === String(itemBaru.id));
-                    if (idxExist !== -1) {
-                        const dLama = dataFinal[idxExist];
-                        const berbeda = buatSignatureItem(dLama) !== buatSignatureItem(itemBaru);
+                kandidatValid.forEach((itemBaru, idxBaru) => {
+                    const infoCocok = mapRevisiByBaruIdx.get(idxBaru) || { idxLama: -1, isRevisi: false };
+                    const idxLama = infoCocok.idxLama;
+                    const isRevBaru = infoCocok.isRevisi;
 
-                        if (adaPerbedaanPadaTanggal && berbeda) {
-                            dataFinal[idxExist] = {
-                                ...dLama,
-                                ...itemBaru,
-                                isRevisi: true,
-                                status: dLama.status || "BELUM"
-                            };
-                        } else {
-                            dataFinal[idxExist] = {
-                                ...dLama,
-                                ekspedisi: itemBaru.ekspedisi,
-                                nopol: itemBaru.nopol,
-                                jenisMobil: itemBaru.jenisMobil,
-                                jenis_mobil: itemBaru.jenis_mobil,
-                                tujuan: itemBaru.tujuan,
-                                kota: itemBaru.kota,
-                                driver: itemBaru.driver,
-                                tglJadwal: itemBaru.tglJadwal,
-                                isRevisi: Boolean(dLama.isRevisi),
-                                status: dLama.status || "BELUM"
-                            };
-                        }
+                    if (idxLama !== -1 && dataFinal[idxLama]) {
+                        const dLama = dataFinal[idxLama];
+                        dataFinal[idxLama] = {
+                            ...dLama,
+                            ekspedisi: itemBaru.ekspedisi,
+                            nopol: itemBaru.nopol,
+                            jenisMobil: itemBaru.jenisMobil,
+                            jenis_mobil: itemBaru.jenis_mobil,
+                            tujuan: itemBaru.tujuan,
+                            kota: itemBaru.kota,
+                            driver: itemBaru.driver,
+                            tglJadwal: itemBaru.tglJadwal,
+                            isRevisi: isRevBaru ? true : Boolean(dLama.isRevisi),
+                            status: dLama.status || "BELUM"
+                        };
                     } else {
                         dataFinal.push({
                             ...itemBaru,
-                            isRevisi: adaPerbedaanPadaTanggal ? true : false
+                            isRevisi: isRevBaru ? true : false
                         });
                     }
                 });
-
-                dataFinal = dataFinal.filter(item => item !== null);
 
                 await dbRef.ref(`master_jadwal/hari_${nodeTanggal}`).set({
                     info: {
@@ -7905,11 +8058,26 @@
         }).join('');
 
         const totalMuat = sumKiri + sumTengah + sumKanan;
+        const aktifKiri = Number(sumKiri) > 0;
+        const aktifTengah = Number(sumTengah) > 0;
+        const aktifKanan = Number(sumKanan) > 0;
+
+        const valTotalKiri = aktifKiri ? Number(sumKiri).toLocaleString('id-ID') : '';
+        const valTotalKanan = aktifKanan ? Number(sumKanan).toLocaleString('id-ID') : '';
+        const valTotalTengah = aktifTengah
+            ? Number(sumTengah).toLocaleString('id-ID')
+            : (!aktifKiri && !aktifKanan ? '0' : '');
+
+        const plusSetelahKiri = aktifKiri && (aktifTengah || aktifKanan) ? ' +' : '';
+        const plusSetelahTengah = aktifTengah && aktifKanan ? ' +' : '';
+
         const winCetak = window.open('', '_blank', 'width=1024,height=720');
         if (!winCetak) {
             window.print();
             return;
         }
+
+        const logoUrlCetak = 'https://komputerwh2-svg.github.io/uth.png';
 
         winCetak.document.write(`
             <!DOCTYPE html>
@@ -7934,9 +8102,12 @@
                     .ket-kiri { text-align: left; }
                     .ket-tengah { text-align: center; }
                     .ket-kanan { text-align: right; }
-                    .total-ket-cell { padding: 5px 8px !important; font-weight: 800; }
-                    .total-rincian { display: flex; justify-content: space-between; gap: 8px; }
-                    .total-muat-baris { margin-top: 3px; text-align: right; }
+                    .total-ket-cell { padding: 4px 6px !important; font-weight: 800; }
+                    .total-rincian { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; gap: 6px; }
+                    .total-pos-kiri { text-align: left; }
+                    .total-pos-tengah { text-align: center; }
+                    .total-pos-kanan { text-align: right; }
+                    .total-muat-baris { margin-top: 3px; text-align: left; }
                     .form-no { margin-top: 8px; font-size: 10px; font-weight: 700; }
                     @media print { body { margin: 8mm; } }
                 </style>
@@ -7945,8 +8116,9 @@
                 <table class="jadwal">
                     <tr>
                         <td colspan="2" rowspan="3" style="border-bottom:none; text-align:center; vertical-align:middle; padding:4px;">
-                            <img src="https://komputerwh2-svg.github.io/uth.png"
-                                onerror="this.onerror=null; this.src='./uth.png';"
+                            <img id="logoUthCetak"
+                                src="${logoUrlCetak}"
+                                data-fallbacks='["./uth.png","https://raw.githubusercontent.com/komputerwh2-svg/jadilo.github.io/main/uth.png"]'
                                 alt="Logo UTH"
                                 style="max-height:54px; max-width:130px; object-fit:contain; display:inline-block;">
                         </td>
@@ -7980,10 +8152,11 @@
                         <td colspan="7" style="border-left:none; border-bottom:none;"></td>
                         <td class="total-ket-cell">
                             <div class="total-rincian">
-                                <span>Total</span>
-                                <span>${sumKiri.toLocaleString('id-ID')} + ${sumTengah.toLocaleString('id-ID')} + ${sumKanan.toLocaleString('id-ID')}</span>
+                                <span class="total-pos-kiri">${valTotalKiri}${plusSetelahKiri}</span>
+                                <span class="total-pos-tengah">${valTotalTengah}${plusSetelahTengah}</span>
+                                <span class="total-pos-kanan">${valTotalKanan}</span>
                             </div>
-                            <div class="total-muat-baris">Total Muat = ${totalMuat.toLocaleString('id-ID')} karton</div>
+                            <div class="total-muat-baris">Total Muat = ${totalMuat.toLocaleString('id-ID')} Karton</div>
                         </td>
                     </tr>
                 </table>
@@ -7992,17 +8165,35 @@
 
                 <script>
                     (function() {
-                        const img = document.querySelector('img[alt="Logo UTH"]');
+                        const img = document.getElementById('logoUthCetak');
+                        let fallbacks = [];
+                        try {
+                            fallbacks = JSON.parse(img.getAttribute('data-fallbacks') || '[]').filter(u => u && u !== img.src);
+                        } catch (_) {}
+                        let idxFb = 0;
                         let sudahPrint = false;
+
                         const mulaiPrint = () => {
                             if (sudahPrint) return;
                             sudahPrint = true;
                             setTimeout(() => window.print(), 180);
                         };
-                        if (img && !img.complete) {
+
+                        if (img) {
+                            img.onerror = function() {
+                                if (idxFb < fallbacks.length) {
+                                    img.src = fallbacks[idxFb++];
+                                } else {
+                                    img.style.display = 'none';
+                                    mulaiPrint();
+                                }
+                            };
                             img.onload = mulaiPrint;
-                            img.onerror = mulaiPrint;
-                            setTimeout(mulaiPrint, 1200);
+                            if (img.complete && img.naturalWidth > 0) {
+                                mulaiPrint();
+                            } else {
+                                setTimeout(mulaiPrint, 1200);
+                            }
                         } else {
                             window.onload = mulaiPrint;
                             setTimeout(mulaiPrint, 300);
