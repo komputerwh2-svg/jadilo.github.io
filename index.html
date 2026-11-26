@@ -650,36 +650,75 @@
 
                 <!-- SUB-HALAMAN 2: BON KBKB -->
                 <div id="subpage-bon-kbkb" class="hidden space-y-4">
-                    <!-- Bar Info Gudang & Tanggal -->
-                    <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                Format Bon:
-                            </span>
-                            <span id="bon-badge-wh-aktif"
-                                class="px-3 py-1 rounded-xl text-[11px] font-black uppercase bg-blue-600 text-white">
-                                BON KBKB: 
-                            </span>
+                    <!-- Panel Atas: Format Bon, Tombol Aksi & Rekap Total Terpadu -->
+                    <div id="bon-kbkb-header-panel" class="bg-slate-50 dark:bg-slate-950/70 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 space-y-3.5">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                    Format Bon:
+                                </span>
+                                <span id="bon-badge-wh-aktif"
+                                    class="px-3 py-1 rounded-xl text-[11px] font-black uppercase bg-blue-600 text-white">
+                                    BON KBKB: WH-2
+                                </span>
 
-                            <!-- Tombol switch khusus ADMIN / SUPERUSER -->
-                            <div id="bon-kbkb-admin-switch" class="hidden items-center gap-1.5 ml-1">
-                                <button type="button" id="btn-bon-admin-wh1" onclick="gantiGudangBonKbkb('WH1')"
-                                    class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all">
-                                    WH-1
+                                <!-- Tombol switch khusus ADMIN / SUPERUSER -->
+                                <div id="bon-kbkb-admin-switch" class="hidden items-center gap-1.5 ml-1">
+                                    <button type="button" id="btn-bon-admin-wh1" onclick="gantiGudangBonKbkb('WH1')"
+                                        class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all">
+                                        WH-1
+                                    </button>
+                                    <button type="button" id="btn-bon-admin-wh2" onclick="gantiGudangBonKbkb('WH2')"
+                                        class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-blue-600 text-white transition-all">
+                                        WH-2
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span id="bon-kbkb-label-tanggal" class="text-[11px] font-bold text-slate-500 dark:text-slate-400"></span>
+                                <button type="button" id="btn-cetak-bon-kbkb" onclick="cetakBonKbkb()"
+                                    class="hidden px-3 py-1.5 rounded-xl text-[11px] font-black uppercase bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white transition-all">
+                                    <i class="fa-solid fa-print mr-1"></i> Cetak
                                 </button>
-                                <button type="button" id="btn-bon-admin-wh2" onclick="gantiGudangBonKbkb('WH2')"
-                                    class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-blue-600 text-white transition-all">
-                                    WH-2
+                                <button type="button" id="btn-simpan-bon-kbkb" onclick="simpanBonKbkbKeFirebase()"
+                                    class="hidden px-3 py-1.5 rounded-xl text-[11px] font-black uppercase bg-emerald-600 hover:bg-emerald-700 text-white transition-all">
+                                    <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan Bon
                                 </button>
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-2">
-                            <span id="bon-kbkb-label-tanggal" class="text-[11px] font-bold text-slate-500 dark:text-slate-400"></span>
-                            <button type="button" id="btn-simpan-bon-kbkb" onclick="simpanBonKbkbKeFirebase()"
-                                class="hidden px-3 py-1.5 rounded-xl text-[11px] font-black uppercase bg-emerald-600 hover:bg-emerald-700 text-white transition-all">
-                                Simpan Bon
-                            </button>
+                        <!-- Rekap Total Per Kolom & Grand Total di Panel Atas -->
+                        <div id="bon-kbkb-summary-top" class="hidden pt-3 border-t border-slate-200/80 dark:border-slate-800 space-y-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-center">
+                                <div class="bg-white dark:bg-slate-900 rounded-xl p-2.5 border border-slate-100 dark:border-slate-800">
+                                    <div id="bon-lbl-kiri" class="text-[9px] font-black uppercase tracking-wider text-indigo-500">
+                                        Titipan WH-1
+                                    </div>
+                                    <div id="bon-sum-kiri" class="text-sm font-black text-slate-800 dark:text-slate-100 mt-0.5">0</div>
+                                </div>
+                                <div class="bg-white dark:bg-slate-900 rounded-xl p-2.5 border border-slate-100 dark:border-slate-800">
+                                    <div id="bon-lbl-tengah" class="text-[9px] font-black uppercase tracking-wider text-blue-500">
+                                        Muat Utama WH-2
+                                    </div>
+                                    <div id="bon-sum-tengah" class="text-sm font-black text-slate-800 dark:text-slate-100 mt-0.5">0</div>
+                                </div>
+                                <div class="bg-white dark:bg-slate-900 rounded-xl p-2.5 border border-slate-100 dark:border-slate-800">
+                                    <div id="bon-lbl-kanan" class="text-[9px] font-black uppercase tracking-wider text-amber-500">
+                                        Titipan Promosi/HRD/Dll
+                                    </div>
+                                    <div id="bon-sum-kanan" class="text-sm font-black text-slate-800 dark:text-slate-100 mt-0.5">0</div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-2 border-t border-slate-200/70 dark:border-slate-800">
+                                <span class="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                                    Total Bon KBKB <span id="bon-wh-title">WH-2</span>
+                                </span>
+                                <span id="bon-grand-total" class="text-base font-black text-emerald-600 dark:text-emerald-400">
+                                    0 Karton
+                                </span>
+                            </div>
                         </div>
                     </div>
 
@@ -691,39 +730,6 @@
                             <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1 italic">
                                 Pilih Tahun, Bulan, dan Tanggal jadwal untuk menampilkan Bon KBKB.
                             </p>
-                        </div>
-                    </div>
-
-                    <!-- Rekap Total Bon KBKB di Bagian Bawah -->
-                    <div id="bon-kbkb-footer-total" class="hidden bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3">
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-center">
-                            <div class="bg-white dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
-                                <div id="bon-lbl-kiri" class="text-[9px] font-black uppercase tracking-wider text-indigo-500">
-                                    Titipan WH-1
-                                </div>
-                                <div id="bon-sum-kiri" class="text-base font-black text-slate-800 dark:text-slate-100 mt-1">0</div>
-                            </div>
-                            <div class="bg-white dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
-                                <div id="bon-lbl-tengah" class="text-[9px] font-black uppercase tracking-wider text-blue-500">
-                                    Muat Utama WH-2
-                                </div>
-                                <div id="bon-sum-tengah" class="text-base font-black text-slate-800 dark:text-slate-100 mt-1">0</div>
-                            </div>
-                            <div class="bg-white dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
-                                <div id="bon-lbl-kanan" class="text-[9px] font-black uppercase tracking-wider text-amber-500">
-                                    Titipan Promosi/HRD/Dll
-                                </div>
-                                <div id="bon-sum-kanan" class="text-base font-black text-slate-800 dark:text-slate-100 mt-1">0</div>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-800">
-                            <span class="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-200">
-                                Total Bon KBKB <span id="bon-wh-title">WH-2</span>
-                            </span>
-                            <span id="bon-grand-total" class="text-lg font-black text-emerald-600 dark:text-emerald-400">
-                                0 Karton
-                            </span>
                         </div>
                     </div>
                 </div>
@@ -4421,14 +4427,12 @@
             const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
             const inputKamera = document.getElementById('fotoKameraInput');
 
-            // Di perangkat mobile / WebView, trigger input capture="environment" lebih natural
             if (isMobile && inputKamera) {
                 inputKamera.value = "";
                 inputKamera.click();
                 return;
             }
 
-            // Di laptop/desktop atau browser yang mendukung getUserMedia live preview
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 try {
                     tutupKameraLive();
@@ -4494,7 +4498,6 @@
             const file = event && event.target && event.target.files ? event.target.files[0] : null;
             if (!file) return;
 
-            // Jika datang dari fotoKameraInput, salin ke fotoJadwalInput agar prosesBacaFotoJadwal() tetap baca satu input utama
             const inputUtama = document.getElementById('fotoJadwalInput');
             if (event.target.id === 'fotoKameraInput' && inputUtama && typeof DataTransfer !== "undefined") {
                 const dt = new DataTransfer();
@@ -4527,7 +4530,6 @@
             reader.readAsDataURL(file);
         }
 
-        // Alias agar pemanggilan lama previewFotoJadwal tetap jalan
         function previewFotoJadwal(event) {
             terimaFotoJadwal(event);
         }
@@ -4619,7 +4621,7 @@
 
         async function ekstrakJadwalViaGeminiFirebase(mimeType, base64Data) {
             const apiKey = await ambilKunciDariFirebase();
-            const promptText = `Balas JSON saja: {"tanggal":"...","items":[{"ekspedisi":"","nopol":"","kota":"","driver":""}]}. Ambil tanggal setelah TANGGAL :, dan tiap baris tabel (ekspedisi, nopol, kota, driver dg BP.). Abaikan tanda tangan & NO Formulir. Huruf kapital.`;
+            const promptText = `Balas JSON saja: {"tanggal":"...","items":[{"ekspedisi":"","nopol":"","jenisMobil":"","tujuan":"","kota":"","driver":""}]}. Ambil tanggal setelah TANGGAL :, dan tiap baris tabel (ekspedisi, nopol, jenis mobil/armada bila ada, tujuan bila ada, kota, driver dg BP.). Abaikan tanda tangan & NO Formulir. Huruf kapital.`;
 
             const bodyPayload = JSON.stringify({
                 contents: [{
@@ -4635,7 +4637,7 @@
 
             const kandidatEndpoint = [
                 "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
-                "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent" 
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent"
             ];
 
             const statusText = document.getElementById('ocr-status-text');
@@ -4667,6 +4669,17 @@
 
         function buatKunciCacheFoto(file) {
             return `${file.name}__${file.size}__${file.lastModified}`;
+        }
+
+        function normalisasiItemOCR(it = {}) {
+            return {
+                ekspedisi: String(it.ekspedisi || it.Ekspedisi || "-").trim().toUpperCase(),
+                nopol: String(it.nopol || it.Nopol || "").trim().toUpperCase(),
+                jenisMobil: String(it.jenisMobil || it.jenis_mobil || it.JENIS_MOBIL || it.mobil || "-").trim().toUpperCase(),
+                tujuan: String(it.tujuan || it.Tujuan || it.TUJUAN || "-").trim().toUpperCase(),
+                kota: String(it.kota || it.Kota || "-").trim().toUpperCase(),
+                driver: String(it.driver || it.Driver || "-").trim().toUpperCase()
+            };
         }
 
         async function prosesBacaFotoJadwal() {
@@ -4711,12 +4724,7 @@
                 const rawItems = Array.isArray(parsed.items) ? parsed.items : [];
 
                 dataHasilOCR = rawItems
-                    .map(it => ({
-                        ekspedisi: String(it.ekspedisi || "-").trim().toUpperCase(),
-                        nopol: String(it.nopol || "").trim().toUpperCase(),
-                        kota: String(it.kota || "-").trim().toUpperCase(),
-                        driver: String(it.driver || "-").trim().toUpperCase()
-                    }))
+                    .map(it => normalisasiItemOCR(it))
                     .filter(it => it.nopol !== "" || it.driver !== "-");
 
                 setProg(100, "Selesai!");
@@ -4731,7 +4739,7 @@
                 const isServerPadat = String(err.message || "").includes("503") || String(err.message || "").includes("Waktu habis");
                 if (isServerPadat) {
                     if (!Array.isArray(dataHasilOCR) || dataHasilOCR.length === 0) {
-                        dataHasilOCR = [{ ekspedisi: "", nopol: "", kota: "", driver: "BP. " }];
+                        dataHasilOCR = [normalisasiItemOCR({ ekspedisi: "", nopol: "", jenisMobil: "-", tujuan: "-", kota: "", driver: "BP. " })];
                     }
                     renderPreviewOCR();
                     const hasilBox = document.getElementById('hasil-ocr-container');
@@ -4761,7 +4769,10 @@
                 return;
             }
 
-            dataHasilOCR.forEach((item, idx) => {
+            dataHasilOCR.forEach((rawItem, idx) => {
+                const item = normalisasiItemOCR(rawItem);
+                dataHasilOCR[idx] = item;
+
                 container.innerHTML += `
                     <div class="bg-slate-50 dark:bg-slate-950 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-2 relative">
                         <div class="flex justify-between items-center">
@@ -4784,7 +4795,21 @@
                         </div>
                         <div class="grid grid-cols-2 gap-2">
                             <div>
-                                <label class="text-[8px] font-bold text-slate-400 uppercase">Tujuan / Kota</label>
+                                <label class="text-[8px] font-bold text-slate-400 uppercase">Jenis Mobil</label>
+                                <input type="text" value="${item.jenisMobil}" onchange="updateItemOCR(${idx}, 'jenisMobil', this.value)"
+                                    placeholder="CONTOH: FUSO / DOUBLE / TRONTON"
+                                    class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-700 dark:text-slate-200 uppercase">
+                            </div>
+                            <div>
+                                <label class="text-[8px] font-bold text-slate-400 uppercase">Tujuan</label>
+                                <input type="text" value="${item.tujuan}" onchange="updateItemOCR(${idx}, 'tujuan', this.value)"
+                                    placeholder="CONTOH: DEPO / CUSTOMER"
+                                    class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-700 dark:text-slate-200 uppercase">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[8px] font-bold text-slate-400 uppercase">Kota</label>
                                 <input type="text" value="${item.kota}" onchange="updateItemOCR(${idx}, 'kota', this.value)"
                                     class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-700 dark:text-slate-200 uppercase">
                             </div>
@@ -4809,7 +4834,7 @@
         }
 
         function tambahBarisManualOCR() {
-            dataHasilOCR.push({ ekspedisi: "UTH", nopol: "", kota: "", driver: "BP. " });
+            dataHasilOCR.push({ ekspedisi: "UTH", nopol: "", jenisMobil: "-", tujuan: "-", kota: "", driver: "BP. " });
             renderPreviewOCR();
         }
 
@@ -4829,25 +4854,49 @@
                 btn.disabled = true;
             }
 
+            const resetTombol = () => {
+                if (btn) {
+                    btn.innerHTML = originalBtnText;
+                    btn.disabled = false;
+                }
+            };
+
+            const normalisasiTeksBanding = (v) => String(v ?? "").trim().toUpperCase().replace(/\s+/g, " ");
+            const buatSignatureItem = (it = {}) => [
+                normalisasiTeksBanding(it.ekspedisi || it.Ekspedisi || "-"),
+                normalisasiTeksBanding(it.nopol || it.Nopol || ""),
+                normalisasiTeksBanding(it.jenisMobil || it.jenis_mobil || it.JENIS_MOBIL || "-"),
+                normalisasiTeksBanding(it.tujuan || it.Tujuan || it.TUJUAN || "-"),
+                normalisasiTeksBanding(it.kota || it.Kota || "-"),
+                normalisasiTeksBanding(it.driver || it.Driver || "-")
+            ].join("||");
+
             try {
                 const nodeTanggal = tglJadwalFoto.replace(/\s/g, '').replace(/[^a-zA-Z0-9]/g, '_');
                 const snapshot = await dbRef.ref(`master_jadwal/hari_${nodeTanggal}/list`).once('value');
                 const rawSnapshotValue = snapshot.val();
-                let dataFinal = rawSnapshotValue
-                    ? (Array.isArray(rawSnapshotValue) ? rawSnapshotValue : Object.values(rawSnapshotValue))
+                const dataLamaList = rawSnapshotValue
+                    ? (Array.isArray(rawSnapshotValue) ? rawSnapshotValue.filter(Boolean) : Object.values(rawSnapshotValue).filter(Boolean))
                     : [];
 
-                dataHasilOCR.forEach((item, idx) => {
-                    const ekspedisi = (item.ekspedisi || "").trim().toUpperCase();
-                    const nopol = (item.nopol || "").trim().toUpperCase();
-                    const kota = (item.kota || "").trim().toUpperCase();
-                    const driver = (item.driver || "").trim().toUpperCase();
+                const kandidatValid = [];
+                dataHasilOCR.forEach((rawItem, idx) => {
+                    const item = normalisasiItemOCR(rawItem);
+                    const ekspedisi = item.ekspedisi || "-";
+                    const nopol = item.nopol;
+                    const jenisMobil = item.jenisMobil || "-";
+                    const tujuan = item.tujuan || "-";
+                    const kota = item.kota || "-";
+                    const driver = item.driver || "-";
 
-                    if (driver !== "" || nopol !== "") {
-                        const itemBaru = {
+                    if (driver !== "-" || nopol !== "") {
+                        kandidatValid.push({
                             id: nodeTanggal + "_" + (14 + idx),
                             ekspedisi,
                             nopol,
+                            jenisMobil,
+                            jenis_mobil: jenisMobil,
+                            tujuan,
                             kota,
                             driver,
                             tglJadwal: tglJadwalFoto,
@@ -4855,28 +4904,83 @@
                             status: "BELUM",
                             wh1: 0,
                             wh2: 0
-                        };
+                        });
+                    }
+                });
 
-                        const idxExist = dataFinal.findIndex(old => old && String(old.id) === String(itemBaru.id));
-                        if (idxExist !== -1) {
-                            const dLama = dataFinal[idxExist];
-                            const adaPerubahan =
-                                dLama.driver !== itemBaru.driver ||
-                                dLama.nopol !== itemBaru.nopol ||
-                                dLama.ekspedisi !== itemBaru.ekspedisi ||
-                                dLama.kota !== itemBaru.kota;
+                if (kandidatValid.length === 0) {
+                    resetTombol();
+                    return alert("Tidak ada baris armada valid (isi Nopol atau Driver) untuk disimpan.");
+                }
 
-                            if (adaPerubahan) {
-                                dataFinal[idxExist] = {
-                                    ...dLama,
-                                    ...itemBaru,
-                                    isRevisi: true,
-                                    status: dLama.status || "BELUM"
-                                };
-                            }
-                        } else {
-                            dataFinal.push(itemBaru);
+                // Cek apakah ada perbedaan pada salah satu item di tanggal yang sama
+                let adaPerbedaanPadaTanggal = false;
+                if (dataLamaList.length !== kandidatValid.length) {
+                    adaPerbedaanPadaTanggal = true;
+                } else {
+                    for (let i = 0; i < kandidatValid.length; i++) {
+                        const baru = kandidatValid[i];
+                        const lamaById = dataLamaList.find(old => old && String(old.id) === String(baru.id));
+                        const lama = lamaById || dataLamaList[i];
+
+                        if (!lama || buatSignatureItem(lama) !== buatSignatureItem(baru)) {
+                            adaPerbedaanPadaTanggal = true;
+                            break;
                         }
+                    }
+                }
+
+                // Jika sudah ada data di tanggal tersebut dan semuanya sama -> minta konfirmasi perbarui
+                if (dataLamaList.length > 0 && !adaPerbedaanPadaTanggal) {
+                    const pesanKonfirmasi = `Seluruh data jadwal untuk tanggal ${tglJadwalFoto} sudah ada dan sama. Apakah data akan diperbarui?`;
+                    const setuju = await (
+                        typeof window.jadiloDialog === 'function'
+                            ? window.jadiloDialog('confirm', pesanKonfirmasi)
+                            : Promise.resolve(window.confirm(pesanKonfirmasi))
+                    );
+
+                    if (setuju !== true) {
+                        resetTombol();
+                        return;
+                    }
+                }
+
+                // Jika ada perbedaan pada salah satu data di tanggal yang sama -> tandai isRevisi: true
+                let dataFinal = [...dataLamaList];
+
+                kandidatValid.forEach((itemBaru) => {
+                    const idxExist = dataFinal.findIndex(old => old && String(old.id) === String(itemBaru.id));
+                    if (idxExist !== -1) {
+                        const dLama = dataFinal[idxExist];
+                        const berbeda = buatSignatureItem(dLama) !== buatSignatureItem(itemBaru);
+
+                        if (adaPerbedaanPadaTanggal && berbeda) {
+                            dataFinal[idxExist] = {
+                                ...dLama,
+                                ...itemBaru,
+                                isRevisi: true,
+                                status: dLama.status || "BELUM"
+                            };
+                        } else {
+                            dataFinal[idxExist] = {
+                                ...dLama,
+                                ekspedisi: itemBaru.ekspedisi,
+                                nopol: itemBaru.nopol,
+                                jenisMobil: itemBaru.jenisMobil,
+                                jenis_mobil: itemBaru.jenis_mobil,
+                                tujuan: itemBaru.tujuan,
+                                kota: itemBaru.kota,
+                                driver: itemBaru.driver,
+                                tglJadwal: itemBaru.tglJadwal,
+                                isRevisi: Boolean(dLama.isRevisi),
+                                status: dLama.status || "BELUM"
+                            };
+                        }
+                    } else {
+                        dataFinal.push({
+                            ...itemBaru,
+                            isRevisi: adaPerbedaanPadaTanggal ? true : false
+                        });
                     }
                 });
 
@@ -4890,7 +4994,18 @@
                     list: dataFinal
                 });
 
-                alert("SUKSES: Jadwal dari Foto Berhasil Ter-Publish ke Firebase.");
+                if (window.dataMasterJadwal) {
+                    window.dataMasterJadwal[`hari_${nodeTanggal}`] = {
+                        ...(window.dataMasterJadwal[`hari_${nodeTanggal}`] || {}),
+                        info: {
+                            tanggal: tglJadwalFoto,
+                            upload_at: new Date().toLocaleString('id-ID')
+                        },
+                        list: dataFinal
+                    };
+                }
+
+                alert("SUKSES: Jadwal dari Foto Berhasil Disimpan.");
 
                 const fotoInput = document.getElementById('fotoJadwalInput');
                 if (fotoInput) fotoInput.value = "";
@@ -4910,10 +5025,7 @@
             } catch (error) {
                 alert("PROSES GAGAL: " + error.message);
             } finally {
-                if (btn) {
-                    btn.innerHTML = originalBtnText;
-                    btn.disabled = false;
-                }
+                resetTombol();
             }
         }
 
@@ -7237,6 +7349,8 @@
         customValues: {} // { [rowUid]: { kiri, tengah, kanan } }
     };
 
+    window._sedangKonfirmasiTitipanBon = window._sedangKonfirmasiTitipanBon || {};
+
     function isUserAdminBonKbkb() {
         const userLevel = (localStorage.getItem('userLevel') || '').toUpperCase();
         const userDivisi = (localStorage.getItem('userDivisi') || '').toUpperCase();
@@ -7263,10 +7377,11 @@
         }
 
         const whAktif = window._stateBonKbkb.wh === 'WH1' ? 'WH1' : 'WH2';
+        const labelWh = whAktif === 'WH1' ? 'WH-1' : 'WH-2';
 
         const badgeWh = document.getElementById('bon-badge-wh-aktif');
         if (badgeWh) {
-            badgeWh.textContent = whAktif === 'WH1' ? 'BON KBKB WH-1' : 'BON KBKB WH-2';
+            badgeWh.textContent = `BON KBKB: ${labelWh}`;
         }
 
         const adminSwitch = document.getElementById('bon-kbkb-admin-switch');
@@ -7311,14 +7426,12 @@
     }
 
     function ambilTanggalTerpilihLaporanBonKbkb() {
-        // 1. Cek jika aplikasi punya state/variabel filter tanggal laporan tersendiri
         const stateTanggal =
             window.tanggalLaporanTerpilih ||
             window.tglLaporanAktif ||
             window._tglLaporanDipilih ||
             '';
 
-        // 2. Cari <select> tanggal di area subpage / laporan
         const host =
             document.getElementById('subpage-bon-kbkb')?.closest('#tab-laporan, .tab-laporan, [id*="laporan"], [class*="laporan"]') ||
             document;
@@ -7395,6 +7508,19 @@
             if (listMaster.length) return listMaster;
         }
 
+        if (labelTanggal) {
+            const targetNorm = normalisasiKeyHariBonKbkb(labelTanggal);
+            for (const k of Object.keys(master)) {
+                const node = master[k];
+                if (!node || typeof node !== 'object') continue;
+                const tglNode = node.tanggal || node.tglJadwal || node.Tanggal || node.label || k;
+                if (normalisasiKeyHariBonKbkb(tglNode) === targetNorm) {
+                    const arrNode = normalisasiListArmadaDariNode(node);
+                    if (arrNode.length) return arrNode;
+                }
+            }
+        }
+
         if (labelTanggal && Array.isArray(localCacheData) && localCacheData.length) {
             const targetNorm = normalisasiKeyHariBonKbkb(labelTanggal);
             const dariCache = localCacheData.filter((item) => {
@@ -7429,7 +7555,6 @@
 
             let valList = snapList ? snapList.val() : null;
 
-            // Fallback: ambil node hari penuh jika /list kosong
             if (!valList) {
                 let snapHari = null;
                 if (refMaster) {
@@ -7485,7 +7610,6 @@
 
     function ambilQtyMuatWhLawan(item, whTarget) {
         const isWh2 = whTarget !== 'WH1';
-        // Untuk Bon WH-2 -> WH lawan adalah WH-1; untuk Bon WH-1 -> WH lawan adalah WH-2
         if (isWh2) {
             const utama1 = Number(item.wh1_utama ?? 0) || 0;
             const tamb1 = Number(item.wh1_tambahan ?? 0) || 0;
@@ -7501,7 +7625,12 @@
         }
     }
 
-    window._sedangKonfirmasiTitipanBon = window._sedangKonfirmasiTitipanBon || {};
+    function ambilQtyTambahanArmada(item, whTarget) {
+        const isWh2 = whTarget !== 'WH1';
+        return isWh2
+            ? (Number(item.wh2_tambahan ?? item.tambahan_wh2 ?? item.tambahan ?? 0) || 0)
+            : (Number(item.wh1_tambahan ?? item.tambahan_wh1 ?? item.tambahan ?? 0) || 0);
+    }
 
     async function handleKlikKolomTitipanWhLawan(el, rowUid, idxArmada, whTarget) {
         if (!el) return;
@@ -7521,7 +7650,6 @@
             const pesan = `Salin qty muat ${labelWhLawan} (${qtyLawan.toLocaleString('id-ID')} Krt) ke Titipan ${labelWhLawan}?`;
 
             try {
-                // window.confirm sudah di-override ke jadiloDialog('confirm', ...) yang mengembalikan Promise<boolean>
                 const setuju = await (
                     typeof window.jadiloDialog === 'function'
                         ? window.jadiloDialog('confirm', pesan)
@@ -7534,7 +7662,6 @@
                     state.customValues[rowUid].kiri = angka;
                     renderSubpageBonKbkb();
                 } else {
-                    // Batal -> pastikan tetap 0
                     state.customValues[rowUid] = state.customValues[rowUid] || {};
                     state.customValues[rowUid].kiri = 0;
                     el.value = '0';
@@ -7548,7 +7675,6 @@
             }
         }
 
-        // Jika sudah terbuka / nilai sudah > 0 / tidak ada qty lawan
         el.readOnly = false;
         el.classList.remove('opacity-75', 'bg-slate-100/80', 'dark:bg-slate-900/80', 'cursor-pointer');
         el.classList.add('bg-slate-50', 'dark:bg-slate-950', 'cursor-text');
@@ -7556,7 +7682,8 @@
 
     async function renderSubpageBonKbkb(listArmada = null, keyHari = null, labelTanggal = null) {
         const container = document.getElementById('bon-kbkb-container');
-        const footerTotal = document.getElementById('bon-kbkb-footer-total');
+        const summaryTop = document.getElementById('bon-kbkb-summary-top');
+        const btnCetak = document.getElementById('btn-cetak-bon-kbkb');
         const btnSimpan = document.getElementById('btn-simpan-bon-kbkb');
         const lblTgl = document.getElementById('bon-kbkb-label-tanggal');
 
@@ -7584,20 +7711,6 @@
         }
         state.listArmada = armada;
 
-        // Fallback: cari node di master yang punya field tanggal/label cocok dengan labelTanggal
-        if (labelTanggal) {
-            const targetNorm = normalisasiKeyHariBonKbkb(labelTanggal);
-            for (const k of Object.keys(master)) {
-                const node = master[k];
-                if (!node || typeof node !== 'object') continue;
-                const tglNode = node.tanggal || node.tglJadwal || node.Tanggal || node.label || k;
-                if (normalisasiKeyHariBonKbkb(tglNode) === targetNorm) {
-                    const arrNode = normalisasiListArmadaDariNode(node);
-                    if (arrNode.length) return arrNode;
-                }
-            }
-        }
-
         if (lblTgl) {
             lblTgl.textContent = labelTglAktif ? `Tanggal: ${labelTglAktif}` : '';
         }
@@ -7611,7 +7724,8 @@
                         ${labelTglAktif ? 'Belum ada data list armada pada tanggal yang dipilih.' : 'Pilih Tahun, Bulan, dan Tanggal jadwal untuk menampilkan Bon KBKB.'}
                     </p>
                 </div>`;
-            if (footerTotal) footerTotal.classList.add('hidden');
+            if (summaryTop) summaryTop.classList.add('hidden');
+            if (btnCetak) btnCetak.classList.add('hidden');
             if (btnSimpan) btnSimpan.classList.add('hidden');
             return;
         }
@@ -7717,7 +7831,8 @@
         if (elKanan) elKanan.textContent = sumKanan.toLocaleString('id-ID');
         if (elGrand) elGrand.textContent = `${grandTotal.toLocaleString('id-ID')} Karton`;
 
-        if (footerTotal) footerTotal.classList.remove('hidden');
+        if (summaryTop) summaryTop.classList.remove('hidden');
+        if (btnCetak) btnCetak.classList.remove('hidden');
         if (btnSimpan) btnSimpan.classList.remove('hidden');
     }
 
@@ -7726,6 +7841,178 @@
         window._stateBonKbkb.customValues[rowUid] = window._stateBonKbkb.customValues[rowUid] || {};
         window._stateBonKbkb.customValues[rowUid][kolom] = angka;
         renderSubpageBonKbkb();
+    }
+
+    function cetakBonKbkb() {
+        const state = window._stateBonKbkb || {};
+        const armada = Array.isArray(state.listArmada) ? state.listArmada : [];
+        if (!armada.length) {
+            alert("Belum ada data Bon KBKB untuk dicetak.");
+            return;
+        }
+
+        const whTarget = sinkronGudangBonKbkbUser();
+        const tanggalTeks = String(state.labelTanggal || '-').toUpperCase();
+
+        let sumKiri = 0;
+        let sumTengah = 0;
+        let sumKanan = 0;
+
+        const barisHtml = armada.map((item, idx) => {
+            const rowUid = `${state.keyHari || 'hari'}_${whTarget}_${item.id || idx}`;
+            const def = ambilNilaiDefaultBonArmada(item, whTarget);
+            const ov = state.customValues?.[rowUid] || {};
+
+            const tambahan = ambilQtyTambahanArmada(item, whTarget);
+            const kiri = Math.max(0, ov.kiri !== undefined ? (parseInt(ov.kiri, 10) || 0) : def.kiri);
+            const tengahDasar = Math.max(0, ov.tengah !== undefined ? (parseInt(ov.tengah, 10) || 0) : def.tengah);
+            const tengah = tengahDasar + tambahan;
+            const kanan = Math.max(0, ov.kanan !== undefined ? (parseInt(ov.kanan, 10) || 0) : def.kanan);
+
+            sumKiri += kiri;
+            sumTengah += tengah;
+            sumKanan += kanan;
+
+            const ekspedisi = String(item.ekspedisi || item.Ekspedisi || item.EXPEDISI || '-').trim().toUpperCase();
+            const nopol = String(item.nopol || item.Nopol || item.NOPOL || item.nomorPolisi || '-').trim().toUpperCase();
+            const jenisMobil = String(item.jenisMobil || item.jenis_mobil || item.JENIS_MOBIL || item.mobil || '-').trim().toUpperCase();
+            const tujuan = String(item.tujuan || item.Tujuan || item.TUJUAN || '-').trim().toUpperCase();
+            const kota = String(item.kota || item.Kota || item.KOTA || '-').trim().toUpperCase();
+            const driver = String(item.driver || item.Driver || item.DRIVER || '-').trim().toUpperCase();
+
+            const teksKiri = kiri > 0 ? kiri.toLocaleString('id-ID') : '';
+            const teksTengah = tengah > 0 ? tengah.toLocaleString('id-ID') : '';
+            const teksKanan = kanan > 0 ? kanan.toLocaleString('id-ID') : '';
+
+            return `
+                <tr>
+                    <td class="tc">${idx + 1}</td>
+                    <td>${ekspedisi}</td>
+                    <td class="tc">${nopol}</td>
+                    <td class="tc">${jenisMobil}</td>
+                    <td>${tujuan}</td>
+                    <td>${kota}</td>
+                    <td>${driver}</td>
+                    <td class="ket-cell">
+                        <div class="ket-grid">
+                            <span class="ket-col ket-kiri">${teksKiri}</span>
+                            <span class="ket-col ket-tengah">${teksTengah}</span>
+                            <span class="ket-col ket-kanan">${teksKanan}</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        const totalMuat = sumKiri + sumTengah + sumKanan;
+        const winCetak = window.open('', '_blank', 'width=1024,height=720');
+        if (!winCetak) {
+            window.print();
+            return;
+        }
+
+        winCetak.document.write(`
+            <!DOCTYPE html>
+            <html lang="id">
+            <head>
+                <meta charset="UTF-8">
+                <title>JADWAL PENGIRIMAN - ${tanggalTeks}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; color: #000; margin: 18px 22px; font-size: 11px; }
+                    table.jadwal { width: 100%; border-collapse: collapse; }
+                    table.jadwal th, table.jadwal td { border: 1px solid #000; padding: 4px 6px; vertical-align: middle; }
+                    .kop-title { font-size: 16px; font-weight: 800; text-align: center; letter-spacing: 0.5px; }
+                    .ttd-hdr { background: #f2f2f2; font-weight: 700; text-align: center; font-size: 10px; width: 105px; }
+                    .ttd-space { height: 34px; }
+                    .ttd-nama { font-weight: 700; text-align: center; font-size: 10px; }
+                    .meta-pt { font-weight: 800; font-size: 11px; }
+                    .meta-tgl { font-weight: 800; font-size: 11px; text-align: center; }
+                    th.hdr-col { background: #e6e6e6; font-weight: 800; text-align: center; font-size: 10px; text-transform: uppercase; }
+                    .tc { text-align: center; }
+                    .ket-cell { padding: 3px 6px !important; }
+                    .ket-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; gap: 6px; font-weight: 700; }
+                    .ket-kiri { text-align: left; }
+                    .ket-tengah { text-align: center; }
+                    .ket-kanan { text-align: right; }
+                    .total-ket-cell { padding: 5px 8px !important; font-weight: 800; }
+                    .total-rincian { display: flex; justify-content: space-between; gap: 8px; }
+                    .total-muat-baris { margin-top: 3px; text-align: right; }
+                    .form-no { margin-top: 8px; font-size: 10px; font-weight: 700; }
+                    @media print { body { margin: 8mm; } }
+                </style>
+            </head>
+            <body>
+                <table class="jadwal">
+                    <tr>
+                        <td colspan="2" rowspan="3" style="border-bottom:none; text-align:center; vertical-align:middle; padding:4px;">
+                            <img src="https://komputerwh2-svg.github.io/uth.png"
+                                onerror="this.onerror=null; this.src='./uth.png';"
+                                alt="Logo UTH"
+                                style="max-height:54px; max-width:130px; object-fit:contain; display:inline-block;">
+                        </td>
+                        <td colspan="4" rowspan="3" class="kop-title" style="border-bottom:none;">JADWAL PENGIRIMAN</td>
+                        <td class="ttd-hdr">DIBUAT</td>
+                        <td class="ttd-hdr">MENGETAHUI</td>
+                    </tr>
+                    <tr>
+                        <td rowspan="2" class="ttd-space"></td>
+                        <td rowspan="2" class="ttd-space"></td>
+                    </tr>
+                    <tr></tr>
+                    <tr>
+                        <td colspan="2" class="meta-pt">PT. ULAM TIBA HALIM</td>
+                        <td colspan="4" class="meta-tgl">TANGGAL : ${tanggalTeks}</td>
+                        <td class="ttd-nama">KUSUMA</td>
+                        <td class="ttd-nama">B DIMAS W</td>
+                    </tr>
+                    <tr>
+                        <th class="hdr-col" style="width:32px;">NO</th>
+                        <th class="hdr-col" style="width:115px;">EXPEDISI</th>
+                        <th class="hdr-col" style="width:92px;">NOMOR POLISI</th>
+                        <th class="hdr-col" style="width:95px;">JENIS MOBIL</th>
+                        <th class="hdr-col" style="width:115px;">TUJUAN</th>
+                        <th class="hdr-col" style="width:105px;">KOTA</th>
+                        <th class="hdr-col" style="width:105px;">DRIVER</th>
+                        <th class="hdr-col" style="width:190px;">KETERANGAN</th>
+                    </tr>
+                    ${barisHtml}
+                    <tr>
+                        <td colspan="7" style="border-left:none; border-bottom:none;"></td>
+                        <td class="total-ket-cell">
+                            <div class="total-rincian">
+                                <span>Total</span>
+                                <span>${sumKiri.toLocaleString('id-ID')} + ${sumTengah.toLocaleString('id-ID')} + ${sumKanan.toLocaleString('id-ID')}</span>
+                            </div>
+                            <div class="total-muat-baris">Total Muat = ${totalMuat.toLocaleString('id-ID')} karton</div>
+                        </td>
+                    </tr>
+                </table>
+
+                <div class="form-no">NO Formulir : 02.UM/01-05-02/01/0</div>
+
+                <script>
+                    (function() {
+                        const img = document.querySelector('img[alt="Logo UTH"]');
+                        let sudahPrint = false;
+                        const mulaiPrint = () => {
+                            if (sudahPrint) return;
+                            sudahPrint = true;
+                            setTimeout(() => window.print(), 180);
+                        };
+                        if (img && !img.complete) {
+                            img.onload = mulaiPrint;
+                            img.onerror = mulaiPrint;
+                            setTimeout(mulaiPrint, 1200);
+                        } else {
+                            window.onload = mulaiPrint;
+                            setTimeout(mulaiPrint, 300);
+                        }
+                    })();
+                <\/script>
+            </body>
+            </html>
+        `);
+        winCetak.document.close();
     }
 
     async function simpanBonKbkbKeFirebase() {
@@ -7750,9 +8037,11 @@
             return {
                 id: item.id || idx,
                 ekspedisi: item.ekspedisi || item.Ekspedisi || '-',
+                nopol: item.nopol || item.Nopol || '-',
+                jenisMobil: item.jenisMobil || item.jenis_mobil || '-',
+                tujuan: item.tujuan || item.Tujuan || '-',
                 kota: item.kota || item.Kota || '-',
                 driver: item.driver || item.Driver || '-',
-                nopol: item.nopol || item.Nopol || '-',
                 titipan_wh_lain: kiri,
                 muat_utama: tengah,
                 titipan_khusus: kanan,
