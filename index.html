@@ -439,10 +439,134 @@
             </div>
         </section>
 
-        <section id="laporan-content" class="content-section text-center py-10">
-            <i class="fa-solid fa-file-invoice text-5xl text-slate-100 dark:text-slate-800 mb-4 transition-colors"></i>
-            <h3 class="font-bold text-slate-800 dark:text-slate-200 uppercase text-xs">Laporan Driver</h3>
-            <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-2 italic">Sedang dalam pengembangan.</p>
+        <section id="laporan-content" class="content-section">
+            <div class="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
+                <!-- Header & Divisi User Login -->
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                    <div>
+                        <h3 class="font-black text-slate-800 dark:text-slate-100 text-sm uppercase tracking-tight">LAPORAN MUAT ARMADA</h3>
+                        <p class="text-[10px] text-slate-400 dark:text-slate-500">Rekap & input muatan armada per Warehouse</p>
+                    </div>
+                    <span id="laporan-divisi-badge" class="text-[9px] font-black uppercase px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50">
+                        DIVISI : -
+                    </span>
+                </div>
+
+                <!-- Sub-Tab Switcher: Draft Muat | Bon KBKB -->
+                <div class="grid grid-cols-2 gap-2 bg-slate-100 dark:bg-slate-950 p-1 rounded-2xl mb-4 border border-slate-200/60 dark:border-slate-800">
+                    <button type="button" id="btn-subtab-draft-muat" onclick="switchSubTabLaporan('draft-muat')"
+                        class="py-2 rounded-xl text-[10px] font-black uppercase tracking-wider bg-blue-600 text-white shadow-sm transition-all">
+                        <i class="fa-solid fa-table-list mr-1"></i> Draft Muat
+                    </button>
+                    <button type="button" id="btn-subtab-bon-kbkb" onclick="switchSubTabLaporan('bon-kbkb')"
+                        class="py-2 rounded-xl text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 transition-all">
+                        <i class="fa-solid fa-receipt mr-1"></i> Bon KBKB
+                    </button>
+                </div>
+
+                <!-- Filter Tanggal Jadwal Bertingkat: Tahun -> Bulan -> Tanggal (Kosong di awal) -->
+                <div class="mb-4 space-y-2">
+                    <div class="flex items-center justify-between px-1">
+                        <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                            Filter Periode & Tanggal Jadwal
+                        </label>
+                        <button type="button" onclick="muatUlangDataLaporan()" title="Refresh Data"
+                            class="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1">
+                            <i class="fa-solid fa-rotate text-[9px]"></i> Refresh
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <!-- 1. Tahun -->
+                        <div>
+                            <select id="laporan-select-tahun" onchange="onTahunLaporanChange()"
+                                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500">
+                                <option value="">-- Pilih Tahun --</option>
+                            </select>
+                        </div>
+
+                        <!-- 2. Bulan -->
+                        <div>
+                            <select id="laporan-select-bulan" onchange="onBulanLaporanChange()" disabled
+                                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 disabled:opacity-50">
+                                <option value="">-- Pilih Bulan --</option>
+                            </select>
+                        </div>
+
+                        <!-- 3. Tanggal Jadwal -->
+                        <div>
+                            <select id="laporan-select-tanggal" onchange="renderLaporanDraftMuat()" disabled
+                                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 disabled:opacity-50">
+                                <option value="">-- Pilih Tanggal --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUB-HALAMAN 1: DRAFT MUAT -->
+                <div id="subpage-draft-muat" class="space-y-5">
+                    <!-- Ringkasan Angka -->
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="bg-blue-50/70 dark:bg-blue-950/25 border border-blue-100 dark:border-blue-900/40 rounded-2xl p-3">
+                            <p class="text-[8px] font-black text-blue-600 dark:text-blue-400 uppercase">Total WH-1</p>
+                            <p id="draft-total-wh1" class="text-sm font-black text-slate-800 dark:text-slate-100 mt-0.5">0</p>
+                            <p class="text-[8px] text-slate-400 uppercase">Karton</p>
+                        </div>
+                        <div class="bg-emerald-50/70 dark:bg-emerald-950/25 border border-emerald-100 dark:border-emerald-900/40 rounded-2xl p-3">
+                            <p class="text-[8px] font-black text-emerald-600 dark:text-emerald-400 uppercase">Total WH-2</p>
+                            <p id="draft-total-wh2" class="text-sm font-black text-slate-800 dark:text-slate-100 mt-0.5">0</p>
+                            <p class="text-[8px] text-slate-400 uppercase">Karton</p>
+                        </div>
+                        <div class="bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700 rounded-2xl p-3">
+                            <p class="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase">Total Semua</p>
+                            <p id="draft-total-semua" class="text-sm font-black text-slate-800 dark:text-slate-100 mt-0.5">0</p>
+                            <p class="text-[8px] text-slate-400 uppercase">Karton</p>
+                        </div>
+                    </div>
+
+                    <!-- Daftar Kartu Draft Muat Armada (3 Bagian: Info Armada | Input WH-1 | Input WH-2) -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-[10px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                                1. Daftar Kartu Muat Armada
+                            </h4>
+                            <span id="draft-info-lock" class="text-[9px] font-semibold text-slate-400 italic"></span>
+                        </div>
+                        <div id="list-kartu-draft-muat" class="space-y-3">
+                            <div class="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 py-8 text-center">
+                                <p class="text-[11px] text-slate-400 italic">Silakan pilih tanggal jadwal terlebih dahulu.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabel Tambahan 1: Total Muat WH-1 -->
+                    <div>
+                        <h4 class="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2">
+                            2. Rekap Total Muat WH-1
+                        </h4>
+                        <div id="tabel-total-wh1" class="overflow-x-auto custom-scrollbar rounded-2xl border border-blue-100 dark:border-blue-900/40">
+                            <p class="text-center py-6 text-[11px] text-slate-400 italic">Belum ada data WH-1.</p>
+                        </div>
+                    </div>
+
+                    <!-- Tabel Tambahan 2: Total Muat WH-2 -->
+                    <div>
+                        <h4 class="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2">
+                            3. Rekap Total Muat WH-2
+                        </h4>
+                        <div id="tabel-total-wh2" class="overflow-x-auto custom-scrollbar rounded-2xl border border-emerald-100 dark:border-emerald-900/40">
+                            <p class="text-center py-6 text-[11px] text-slate-400 italic">Belum ada data WH-2.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUB-HALAMAN 2: BON KBKB (PLACEHOLDER TAHAP BERIKUTNYA) -->
+                <div id="subpage-bon-kbkb" class="hidden text-center py-10">
+                    <i class="fa-solid fa-receipt text-4xl text-slate-300 dark:text-slate-700 mb-3"></i>
+                    <h4 class="font-bold text-slate-700 dark:text-slate-200 text-xs uppercase">Bon KBKB</h4>
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1 italic">Format Bon KBKB siap disusun di langkah berikutnya.</p>
+                </div>
+            </div>
         </section>
 
         <section id="setelan-content" class="content-section">
@@ -5239,7 +5363,7 @@
                         ` : ''}
                         <button type="button" onclick="kirimRekapJadwalWA('${String(tanggal).replace(/'/g, "\\'")}')"
                             class="bg-green-600 hover:bg-green-700 text-white text-[10px] font-black px-3.5 py-2 rounded-xl uppercase tracking-wider shadow-sm active:scale-95 transition-all inline-flex items-center gap-1.5">
-                            <i class="fa-brands fa-whatsapp"></i> Kirim WA
+                            <i class="fa-brands fa-whatsapp"></i> Kirim WA Grup
                         </button>
                     </div>
                 </div>
@@ -5864,10 +5988,720 @@
             ].join("\n");
 
             bukaWhatsAppDenganTeks(pesan);
-        }  
+        } 
+        
+    // ==========================================
+    // PART 2: LOGIKA TAB LAPORAN MUAT ARMADA
+    // ==========================================
+
+    const _NAMA_BULAN_LAPORAN = [
+        'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
+        'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'
+    ];
+
+    const _MAP_BULAN_LAPORAN = {
+        JAN: 1, JANUARI: 1, '01': 1, '1': 1,
+        FEB: 2, FEBRUARI: 2, '02': 2, '2': 2,
+        MAR: 3, MARET: 3, '03': 3, '3': 3,
+        APR: 4, APRIL: 4, '04': 4, '4': 4,
+        MEI: 5, MAY: 5, '05': 5, '5': 5,
+        JUN: 6, JUNI: 6, JUNE: 6, '06': 6, '6': 6,
+        JUL: 7, JULI: 7, JULY: 7, '07': 7, '7': 7,
+        AGU: 8, AGS: 8, AGUSTUS: 8, AUG: 8, AUGUST: 8, '08': 8, '8': 8,
+        SEP: 9, SEPT: 9, SEPTEMBER: 9, '09': 9, '9': 9,
+        OKT: 10, OKTOBER: 10, OCT: 10, OCTOBER: 10, '10': 10,
+        NOV: 11, NOVEMBER: 11, '11': 11,
+        DES: 12, DESEMBER: 12, DEC: 12, DECEMBER: 12, '12': 12
+    };
+
+    function ambilDivisiUserAktif() {
+        const userDivisi = (localStorage.getItem('userDivisi') || '').trim().toUpperCase();
+        const userLevel = (localStorage.getItem('userLevel') || '').trim().toUpperCase();
+
+        if (
+            userDivisi === 'ADMIN' ||
+            userDivisi === 'SUPERUSER' ||
+            userLevel === 'ADMIN' ||
+            userLevel === 'SUPERUSER'
+        ) {
+            return 'ADMIN';
+        }
+        return userDivisi || userLevel;
+    }
+
+    function ambilLabelDivisiLengkap() {
+        const userDivisi = (localStorage.getItem('userDivisi') || '').trim().toUpperCase();
+        const userLevel = (localStorage.getItem('userLevel') || '').trim().toUpperCase();
+
+        if (userDivisi && userLevel && userDivisi !== userLevel) {
+            return `${userLevel} / ${userDivisi}`;
+        }
+        return userDivisi || userLevel || '-';
+    }
+
+    function cekAksesTabLaporan() {
+        const divisi = ambilDivisiUserAktif();
+        return (
+            divisi === 'ADMIN' ||
+            divisi === 'SUPERUSER' ||
+            divisi === 'WH-1' ||
+            divisi === 'WH1' ||
+            divisi === 'WH-2' ||
+            divisi === 'WH2'
+        );
+    }
+
+    function cekBolehEditWH(whKey) {
+        const divisi = ambilDivisiUserAktif();
+        if (divisi === 'ADMIN' || divisi === 'SUPERUSER') return true;
+        if (whKey === 'wh1' && (divisi === 'WH-1' || divisi === 'WH1')) return true;
+        if (whKey === 'wh2' && (divisi === 'WH-2' || divisi === 'WH2')) return true;
+        return false;
+    }
+
+    function initAksesLaporan() {
+        const badgeEl = document.getElementById('laporan-divisi-badge');
+        if (badgeEl) {
+            badgeEl.textContent = `DIVISI : ${ambilLabelDivisiLengkap()}`;
+        }
+
+        const lockInfo = document.getElementById('draft-info-lock');
+        if (lockInfo) {
+            if (cekBolehEditWH('wh1') && cekBolehEditWH('wh2')) {
+                lockInfo.textContent = 'Akses penuh: WH-1 & WH-2 dapat diedit';
+            } else if (cekBolehEditWH('wh1')) {
+                lockInfo.textContent = 'Divisi WH-1: hanya kolom WH-1 yang aktif';
+            } else if (cekBolehEditWH('wh2')) {
+                lockInfo.textContent = 'Divisi WH-2: hanya kolom WH-2 yang aktif';
+            } else {
+                lockInfo.textContent = 'Mode baca saja';
+            }
+        }
+    }
+
+    // Guard saat berpindah ke tab laporan
+    const _switchTabAsli = typeof switchTab === 'function' ? switchTab : null;
+    window.switchTab = function(tabName, ...args) {
+        if (tabName === 'laporan' && !cekAksesTabLaporan()) {
+            if (typeof showToast === 'function') {
+                showToast('Tab Laporan hanya untuk Admin, WH-1, dan WH-2.', 'warning');
+            } else {
+                alert('🚨 Akses Terbatas: Tab Laporan hanya untuk Admin, WH-1, dan WH-2.');
+            }
+            if (_switchTabAsli) return _switchTabAsli('jadwal', ...args);
+            return;
+        }
+
+        if (_switchTabAsli) {
+            _switchTabAsli(tabName, ...args);
+        }
+
+        if (tabName === 'laporan') {
+            initAksesLaporan();
+            populateTanggalLaporan(false); // Kosong di awal sampai user memilih
+        }
+    };
+
+    function switchSubTabLaporan(subTab) {
+        const btnDraft = document.getElementById('btn-subtab-draft-muat');
+        const btnBon = document.getElementById('btn-subtab-bon-kbkb');
+        const pageDraft = document.getElementById('subpage-draft-muat');
+        const pageBon = document.getElementById('subpage-bon-kbkb');
+
+        if (subTab === 'draft-muat') {
+            btnDraft?.classList.add('bg-blue-600', 'text-white', 'shadow-sm');
+            btnDraft?.classList.remove('text-slate-500', 'dark:text-slate-400');
+            btnBon?.classList.remove('bg-blue-600', 'text-white', 'shadow-sm');
+            btnBon?.classList.add('text-slate-500', 'dark:text-slate-400');
+            pageDraft?.classList.remove('hidden');
+            pageBon?.classList.add('hidden');
+        } else {
+            btnBon?.classList.add('bg-blue-600', 'text-white', 'shadow-sm');
+            btnBon?.classList.remove('text-slate-500', 'dark:text-slate-400');
+            btnDraft?.classList.remove('bg-blue-600', 'text-white', 'shadow-sm');
+            btnDraft?.classList.add('text-slate-500', 'dark:text-slate-400');
+            pageBon?.classList.remove('hidden');
+            pageDraft?.classList.add('hidden');
+        }
+    }
+
+    function ambilRefMasterJadwal() {
+        if (typeof database !== 'undefined' && database) {
+            return database.ref('master_jadwal');
+        }
+        if (typeof db !== 'undefined' && db) {
+            return db.ref('master_jadwal');
+        }
+        return null;
+    }
+
+    function parseInfoTanggalJadwal(keyHari, objHari) {
+        const rawLabel = String(
+            (objHari && objHari.info && objHari.info.tanggal) ||
+            (objHari && objHari.tanggal) ||
+            keyHari.replace(/^hari_/i, '')
+        ).trim();
+
+        const upper = rawLabel.toUpperCase();
+        let hari = 1;
+        let bulan = 1;
+        let tahun = 1970;
+
+        const matchTeks = upper.match(/(\d{1,2})\s*([A-Z]+)\s*(\d{4})/);
+        if (matchTeks) {
+            hari = parseInt(matchTeks[1], 10) || 1;
+            bulan = _MAP_BULAN_LAPORAN[matchTeks[2]] || 1;
+            tahun = parseInt(matchTeks[3], 10) || 1970;
+        } else {
+            const parts = upper.split(/[-/_\s]+/).filter(Boolean);
+            if (parts.length >= 3) {
+                if (parts[0].length === 4) {
+                    tahun = parseInt(parts[0], 10) || 1970;
+                    bulan = _MAP_BULAN_LAPORAN[parts[1]] || parseInt(parts[1], 10) || 1;
+                    hari = parseInt(parts[2], 10) || 1;
+                } else {
+                    hari = parseInt(parts[0], 10) || 1;
+                    bulan = _MAP_BULAN_LAPORAN[parts[1]] || parseInt(parts[1], 10) || 1;
+                    tahun = parseInt(parts[2], 10) || 1970;
+                }
+            }
+        }
+
+        const sortKey = (tahun * 10000) + (bulan * 100) + hari;
+        return {
+            keyHari,
+            label: rawLabel || keyHari,
+            tahun,
+            bulan,
+            bulanNama: _NAMA_BULAN_LAPORAN[bulan - 1] || String(bulan),
+            hari,
+            sortKey
+        };
+    }
+
+    function ambilDaftarItemTanggalTerurut() {
+        const rootData = window.dataMasterJadwal || window.masterJadwal || {};
+        const items = Object.keys(rootData)
+            .filter((k) => k.startsWith('hari_'))
+            .map((keyHari) => parseInfoTanggalJadwal(keyHari, rootData[keyHari]));
+
+        items.sort((a, b) => b.sortKey - a.sortKey);
+        return items;
+    }
+
+    function populateTanggalLaporan(pertahankanPilihan = false) {
+        const selTahun = document.getElementById('laporan-select-tahun');
+        const selBulan = document.getElementById('laporan-select-bulan');
+        const selTanggal = document.getElementById('laporan-select-tanggal');
+
+        // Fallback jika masih memakai 1 dropdown tanggal saja
+        if (!selTahun || !selBulan) {
+            if (!selTanggal) return;
+            const prev = pertahankanPilihan ? selTanggal.value : '';
+            const refMaster = ambilRefMasterJadwal();
+            selTanggal.innerHTML = '<option value="">-- Pilih Tanggal Jadwal --</option>';
+            if (!refMaster) return;
+
+            refMaster.once('value').then((snap) => {
+                window.dataMasterJadwal = snap.val() || {};
+                const items = ambilDaftarItemTanggalTerurut();
+                selTanggal.innerHTML = '<option value="">-- Pilih Tanggal Jadwal --</option>';
+                items.forEach((x) => {
+                    const opt = document.createElement('option');
+                    opt.value = x.keyHari;
+                    opt.textContent = x.label;
+                    selTanggal.appendChild(opt);
+                });
+                if (pertahankanPilihan && prev && items.some((x) => x.keyHari === prev)) {
+                    selTanggal.value = prev;
+                    renderLaporanDraftMuat();
+                } else {
+                    selTanggal.value = '';
+                    resetTampilanKosongDraftMuat();
+                }
+            });
+            return;
+        }
+
+        const prevKeyHari = pertahankanPilihan ? selTanggal.value : '';
+        const refMaster = ambilRefMasterJadwal();
+
+        const terapkanKeDropdown = (items) => {
+            window._cacheItemsTanggalLaporan = items;
+
+            const tahunUnik = Array.from(new Set(items.map((x) => x.tahun))).sort((a, b) => b - a);
+            selTahun.innerHTML = '<option value="">-- Pilih Tahun --</option>';
+            tahunUnik.forEach((thn) => {
+                const opt = document.createElement('option');
+                opt.value = String(thn);
+                opt.textContent = String(thn);
+                selTahun.appendChild(opt);
+            });
+
+            selBulan.innerHTML = '<option value="">-- Pilih Bulan --</option>';
+            selBulan.disabled = true;
+            selTanggal.innerHTML = '<option value="">-- Pilih Tanggal --</option>';
+            selTanggal.disabled = true;
+
+            if (pertahankanPilihan && prevKeyHari) {
+                const target = items.find((x) => x.keyHari === prevKeyHari);
+                if (target) {
+                    selTahun.value = String(target.tahun);
+                    onTahunLaporanChange(target.bulan, target.keyHari);
+                    return;
+                }
+            }
+
+            selTahun.value = '';
+            resetTampilanKosongDraftMuat();
+        };
+
+        if (!pertahankanPilihan) {
+            selTahun.value = '';
+            selBulan.innerHTML = '<option value="">-- Pilih Bulan --</option>';
+            selBulan.disabled = true;
+            selTanggal.innerHTML = '<option value="">-- Pilih Tanggal --</option>';
+            selTanggal.disabled = true;
+            resetTampilanKosongDraftMuat();
+        }
+
+        if (!refMaster) return;
+
+        refMaster.once('value').then((snap) => {
+            window.dataMasterJadwal = snap.val() || {};
+            terapkanKeDropdown(ambilDaftarItemTanggalTerurut());
+        }).catch((err) => {
+            console.error('Gagal mengambil tanggal jadwal dari Firebase:', err);
+        });
+    }
+
+    function onTahunLaporanChange(bulanDipilih = '', keyHariDipilih = '') {
+        const selTahun = document.getElementById('laporan-select-tahun');
+        const selBulan = document.getElementById('laporan-select-bulan');
+        const selTanggal = document.getElementById('laporan-select-tanggal');
+        if (!selTahun || !selBulan || !selTanggal) return;
+
+        const items = window._cacheItemsTanggalLaporan || ambilDaftarItemTanggalTerurut();
+        const tahunVal = parseInt(selTahun.value, 10);
+
+        selBulan.innerHTML = '<option value="">-- Pilih Bulan --</option>';
+        selTanggal.innerHTML = '<option value="">-- Pilih Tanggal --</option>';
+        selTanggal.disabled = true;
+        resetTampilanKosongDraftMuat();
+
+        if (!tahunVal) {
+            selBulan.disabled = true;
+            return;
+        }
+
+        const bulanDiTahun = items.filter((x) => x.tahun === tahunVal);
+        const mapBulanUnik = new Map();
+        bulanDiTahun.forEach((x) => {
+            if (!mapBulanUnik.has(x.bulan)) {
+                mapBulanUnik.set(x.bulan, x.bulanNama);
+            }
+        });
+
+        const bulanSorted = Array.from(mapBulanUnik.entries()).sort((a, b) => b[0] - a[0]);
+        bulanSorted.forEach(([numBulan, namaBulan]) => {
+            const opt = document.createElement('option');
+            opt.value = String(numBulan);
+            opt.textContent = namaBulan;
+            selBulan.appendChild(opt);
+        });
+
+        selBulan.disabled = false;
+
+        if (bulanDipilih) {
+            selBulan.value = String(bulanDipilih);
+            onBulanLaporanChange(keyHariDipilih);
+        } else {
+            selBulan.value = '';
+        }
+    }
+
+    function onBulanLaporanChange(keyHariDipilih = '') {
+        const selTahun = document.getElementById('laporan-select-tahun');
+        const selBulan = document.getElementById('laporan-select-bulan');
+        const selTanggal = document.getElementById('laporan-select-tanggal');
+        if (!selTahun || !selBulan || !selTanggal) return;
+
+        const items = window._cacheItemsTanggalLaporan || ambilDaftarItemTanggalTerurut();
+        const tahunVal = parseInt(selTahun.value, 10);
+        const bulanVal = parseInt(selBulan.value, 10);
+
+        selTanggal.innerHTML = '<option value="">-- Pilih Tanggal --</option>';
+        resetTampilanKosongDraftMuat();
+
+        if (!tahunVal || !bulanVal) {
+            selTanggal.disabled = true;
+            return;
+        }
+
+        const tanggalCocok = items
+            .filter((x) => x.tahun === tahunVal && x.bulan === bulanVal)
+            .sort((a, b) => b.sortKey - a.sortKey);
+
+        tanggalCocok.forEach((item) => {
+            const opt = document.createElement('option');
+            opt.value = item.keyHari;
+            opt.textContent = item.label;
+            selTanggal.appendChild(opt);
+        });
+
+        selTanggal.disabled = false;
+
+        if (keyHariDipilih) {
+            selTanggal.value = keyHariDipilih;
+            renderLaporanDraftMuat();
+        } else {
+            selTanggal.value = '';
+        }
+    }
+
+    function muatUlangDataLaporan() {
+        initAksesLaporan();
+        const selTanggal = document.getElementById('laporan-select-tanggal');
+        const keyTerpilih = selTanggal ? selTanggal.value : '';
+
+        const refMaster = ambilRefMasterJadwal();
+        if (!refMaster) {
+            populateTanggalLaporan(false);
+            return;
+        }
+
+        refMaster.once('value').then((snap) => {
+            window.dataMasterJadwal = snap.val() || {};
+            const items = ambilDaftarItemTanggalTerurut();
+            window._cacheItemsTanggalLaporan = items;
+
+            if (keyTerpilih) {
+                const target = items.find((x) => x.keyHari === keyTerpilih);
+                const selTahun = document.getElementById('laporan-select-tahun');
+                if (target && selTahun) {
+                    populateTanggalLaporan(false);
+                    selTahun.value = String(target.tahun);
+                    onTahunLaporanChange(target.bulan, target.keyHari);
+                    return;
+                }
+            }
+            populateTanggalLaporan(false);
+        });
+    }
+
+    function resetTampilanKosongDraftMuat() {
+        const tWh1 = document.getElementById('draft-total-wh1');
+        const tWh2 = document.getElementById('draft-total-wh2');
+        const tAll = document.getElementById('draft-total-semua');
+        if (tWh1) tWh1.textContent = '0';
+        if (tWh2) tWh2.textContent = '0';
+        if (tAll) tAll.textContent = '0';
+
+        const listEl = document.getElementById('list-kartu-draft-muat');
+        if (listEl) {
+            listEl.innerHTML = `
+                <div class="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 py-8 text-center">
+                    <p class="text-[11px] text-slate-400 italic">Silakan pilih tahun, bulan, dan tanggal jadwal terlebih dahulu.</p>
+                </div>`;
+        }
+
+        const rWh1 = document.getElementById('tabel-total-wh1');
+        const rWh2 = document.getElementById('tabel-total-wh2');
+        if (rWh1) rWh1.innerHTML = '<p class="text-center py-6 text-[11px] text-slate-400 italic">Pilih tanggal jadwal untuk melihat rekap WH-1.</p>';
+        if (rWh2) rWh2.innerHTML = '<p class="text-center py-6 text-[11px] text-slate-400 italic">Pilih tanggal jadwal untuk melihat rekap WH-2.</p>';
+    }
+
+    function normalisasiListArmada(keyHari) {
+        if (!keyHari) return [];
+        const sumberMaster = window.dataMasterJadwal || window.masterJadwal || {};
+        const rawHari = sumberMaster[keyHari];
+        if (!rawHari) return [];
+        if (Array.isArray(rawHari.list)) return rawHari.list.filter(Boolean);
+        if (rawHari.list && typeof rawHari.list === 'object') return Object.values(rawHari.list).filter(Boolean);
+        return [];
+    }
+
+    function ambilNilaiAngkaWH(item, whKey) {
+        if (!item) return 0;
+        if (whKey === 'wh1') {
+            return Number(item.wh1 ?? item.muat_wh1 ?? item.karton_wh1 ?? 0) || 0;
+        }
+        return Number(item.wh2 ?? item.muat_wh2 ?? item.karton_wh2 ?? 0) || 0;
+    }
+
+    function normalisasiDraftMuatHari(keyHari) {
+        if (!keyHari) return [];
+        const sumberMaster = window.dataMasterJadwal || window.masterJadwal || {};
+        const rawDraft = sumberMaster[keyHari]?.draft_muat;
+        if (!rawDraft) return [];
+        if (Array.isArray(rawDraft)) return rawDraft;
+        if (typeof rawDraft === 'object') return Object.values(rawDraft);
+        return [];
+    }
+
+    function ambilNilaiDraftWH(draftItem, listItem, whKey) {
+        if (whKey === 'wh1') {
+            if (draftItem && draftItem.wh1 !== undefined && draftItem.wh1 !== null && draftItem.wh1 !== '') {
+                return Number(draftItem.wh1) || 0;
+            }
+            return Number(listItem?.wh1 ?? listItem?.muat_wh1 ?? listItem?.karton_wh1 ?? 0) || 0;
+        }
+
+        if (draftItem && draftItem.wh2 !== undefined && draftItem.wh2 !== null && draftItem.wh2 !== '') {
+            return Number(draftItem.wh2) || 0;
+        }
+        return Number(listItem?.wh2 ?? listItem?.muat_wh2 ?? listItem?.karton_wh2 ?? 0) || 0;
+    }
+
+    function updatePreviewTotalArmada(idx) {
+        const inp1 = document.getElementById(`input-wh1-${idx}`);
+        const inp2 = document.getElementById(`input-wh2-${idx}`);
+        const elTotal = document.getElementById(`total-armada-${idx}`);
+        if (!elTotal) return;
+
+        const v1 = Math.max(0, parseInt(inp1?.value, 10) || 0);
+        const v2 = Math.max(0, parseInt(inp2?.value, 10) || 0);
+        elTotal.textContent = (v1 + v2).toLocaleString('id-ID');
+    }
+
+    function renderLaporanDraftMuat() {
+        initAksesLaporan();
+        const selectEl = document.getElementById('laporan-select-tanggal');
+        const keyHari = selectEl ? selectEl.value : '';
+
+        if (!keyHari) {
+            resetTampilanKosongDraftMuat();
+            return;
+        }
+
+        const armadaList = normalisasiListArmada(keyHari);
+        const draftList = normalisasiDraftMuatHari(keyHari);
+        const labelTgl = selectEl.options[selectEl.selectedIndex]?.textContent || keyHari;
+
+        const listEl = document.getElementById('list-kartu-draft-muat');
+        const rWh1El = document.getElementById('tabel-total-wh1');
+        const rWh2El = document.getElementById('tabel-total-wh2');
+
+        if (!armadaList.length) {
+            if (listEl) {
+                listEl.innerHTML = `
+                    <div class="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 py-8 text-center">
+                        <p class="text-[11px] text-slate-400 italic">Tidak ada data armada pada ${labelTgl}.</p>
+                    </div>`;
+            }
+            if (rWh1El) rWh1El.innerHTML = '<p class="text-center py-6 text-[11px] text-slate-400 italic">Belum ada data WH-1.</p>';
+            if (rWh2El) rWh2El.innerHTML = '<p class="text-center py-6 text-[11px] text-slate-400 italic">Belum ada data WH-2.</p>';
+            return;
+        }
+
+        const bolehEdit1 = cekBolehEditWH('wh1');
+        const bolehEdit2 = cekBolehEditWH('wh2');
+
+        let grandTotalWh1 = 0;
+        let grandTotalWh2 = 0;
+        const barisWh1 = [];
+        const barisWh2 = [];
+
+        const kartuHtml = armadaList.map((item, idx) => {
+            const draftItem = draftList[idx] || {};
+            const val1 = ambilNilaiDraftWH(draftItem, item, 'wh1');
+            const val2 = ambilNilaiDraftWH(draftItem, item, 'wh2');
+            const totalArmada = val1 + val2;
+
+            grandTotalWh1 += val1;
+            grandTotalWh2 += val2;
+
+            const ekspedisi = item.ekspedisi || item.Ekspedisi || item.vendor || '-';
+            const sopir = item.driver || item.Driver || item.sopir || '-';
+            const nopol = item.nopol || item.Nopol || item.plat || '-';
+            const tujuan = item.kota || item.Kota || item.tujuan || '-';
+            const jam1 = draftItem.jam_wh1 || item.jam_wh1 || item.selesai_wh1 || '';
+            const jam2 = draftItem.jam_wh2 || item.jam_wh2 || item.selesai_wh2 || '';
+
+            if (val1 > 0) {
+                barisWh1.push({ ekspedisi, sopir, nopol, tujuan, jumlah: val1, jam: jam1 || '-' });
+            }
+            if (val2 > 0) {
+                barisWh2.push({ ekspedisi, sopir, nopol, tujuan, jumlah: val2, jam: jam2 || '-' });
+            }
+
+            const disabled1Attr = bolehEdit1 ? '' : 'disabled';
+            const disabled2Attr = bolehEdit2 ? '' : 'disabled';
+
+            const inputWh1Class = bolehEdit1
+                ? 'bg-white dark:bg-slate-900 border-blue-300 dark:border-blue-700 text-slate-800 dark:text-slate-100 focus:border-blue-500'
+                : 'bg-slate-100 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-400 cursor-not-allowed opacity-75';
+
+            const inputWh2Class = bolehEdit2
+                ? 'bg-white dark:bg-slate-900 border-emerald-300 dark:border-emerald-700 text-slate-800 dark:text-slate-100 focus:border-emerald-500'
+                : 'bg-slate-100 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-400 cursor-not-allowed opacity-75';
+
+            return `
+            <div class="rounded-2xl bg-slate-50/90 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 p-3.5 transition-all">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                    <!-- Kolom 1: Info Armada -->
+                    <div class="md:col-span-5 space-y-0.5">
+                        <p class="text-xs font-black text-slate-800 dark:text-slate-100 uppercase truncate">${ekspedisi}</p>
+                        <p class="text-[11px] font-semibold text-slate-600 dark:text-slate-300 truncate">${sopir}</p>
+                        <div class="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 pt-0.5">
+                            <span class="font-bold text-slate-700 dark:text-slate-200">${nopol}</span>
+                            <span>•</span>
+                            <span><i class="fa-solid fa-location-dot text-[9px] text-rose-500 mr-0.5"></i>${tujuan}</span>
+                        </div>
+                    </div>
+
+                    <!-- Kolom 2: Input WH-1 -->
+                    <div class="md:col-span-3 bg-blue-50/60 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-xl p-2.5">
+                        <div class="flex items-center justify-between mb-1">
+                            <label for="input-wh1-${idx}" class="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                                Input WH-1
+                            </label>
+                            ${!bolehEdit1 ? '<i class="fa-solid fa-lock text-[9px] text-slate-400" title="Terkunci untuk divisi Anda"></i>' : ''}
+                        </div>
+                        <input type="number" min="0" id="input-wh1-${idx}" value="${val1}" ${disabled1Attr}
+                            oninput="updatePreviewTotalArmada(${idx})"
+                            onchange="simpanMuatWH('${keyHari}', ${idx}, 'wh1', this.value)"
+                            class="w-full rounded-lg border px-2.5 py-1.5 text-xs font-black outline-none transition-all ${inputWh1Class}">
+                    </div>
+
+                    <!-- Kolom 3: Input WH-2 -->
+                    <div class="md:col-span-2 bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 rounded-xl p-2.5">
+                        <div class="flex items-center justify-between mb-1">
+                            <label for="input-wh2-${idx}" class="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                                Input WH-2
+                            </label>
+                            ${!bolehEdit2 ? '<i class="fa-solid fa-lock text-[9px] text-slate-400" title="Terkunci untuk divisi Anda"></i>' : ''}
+                        </div>
+                        <input type="number" min="0" id="input-wh2-${idx}" value="${val2}" ${disabled2Attr}
+                            oninput="updatePreviewTotalArmada(${idx})"
+                            onchange="simpanMuatWH('${keyHari}', ${idx}, 'wh2', this.value)"
+                            class="w-full rounded-lg border px-2.5 py-1.5 text-xs font-black outline-none transition-all ${inputWh2Class}">
+                    </div>
+
+                    <!-- Kolom 4: Total Muat Armada -->
+                    <div class="md:col-span-2 bg-slate-100/90 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl p-2.5 text-right">
+                        <p class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                            Total Muat
+                        </p>
+                        <p class="text-xs font-black text-slate-800 dark:text-slate-100">
+                            <span id="total-armada-${idx}">${totalArmada.toLocaleString('id-ID')}</span>
+                            <span class="text-[9px] font-bold text-slate-500">Krt</span>
+                        </p>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+
+        if (listEl) listEl.innerHTML = kartuHtml;
+
+        document.getElementById('draft-total-wh1').textContent = grandTotalWh1.toLocaleString('id-ID');
+        document.getElementById('draft-total-wh2').textContent = grandTotalWh2.toLocaleString('id-ID');
+        document.getElementById('draft-total-semua').textContent = (grandTotalWh1 + grandTotalWh2).toLocaleString('id-ID');
+
+        renderTabelRekapWH('tabel-total-wh1', barisWh1, grandTotalWh1, 'WH-1', 'blue');
+        renderTabelRekapWH('tabel-total-wh2', barisWh2, grandTotalWh2, 'WH-2', 'emerald');
+    }
+
+    function simpanMuatWH(keyHari, index, whKey, rawVal) {
+        if (!cekBolehEditWH(whKey)) {
+            if (typeof showToast === 'function') {
+                showToast(`Anda tidak memiliki akses edit untuk ${whKey.toUpperCase()}.`, 'error');
+            }
+            renderLaporanDraftMuat();
+            return;
+        }
+
+        const nilaiBaru = Math.max(0, parseInt(rawVal, 10) || 0);
+        const jamSekarang = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+        window.dataMasterJadwal = window.dataMasterJadwal || {};
+        window.dataMasterJadwal[keyHari] = window.dataMasterJadwal[keyHari] || {};
+        window.dataMasterJadwal[keyHari].draft_muat = window.dataMasterJadwal[keyHari].draft_muat || {};
+
+        const armadaList = normalisasiListArmada(keyHari);
+        const armadaRef = armadaList[index] || {};
+        const draftLama = window.dataMasterJadwal[keyHari].draft_muat[index] || {};
+
+        const draftBaru = {
+            ...draftLama,
+            id: armadaRef.id || draftLama.id || null,
+            ekspedisi: armadaRef.ekspedisi || armadaRef.Ekspedisi || draftLama.ekspedisi || '-',
+            driver: armadaRef.driver || armadaRef.Driver || armadaRef.sopir || draftLama.driver || '-',
+            nopol: armadaRef.nopol || armadaRef.Nopol || armadaRef.plat || draftLama.nopol || '-',
+            kota: armadaRef.kota || armadaRef.Kota || armadaRef.tujuan || draftLama.kota || '-',
+            wh1: whKey === 'wh1' ? nilaiBaru : (Number(draftLama.wh1) || 0),
+            jam_wh1: whKey === 'wh1' ? jamSekarang : (draftLama.jam_wh1 || ''),
+            wh2: whKey === 'wh2' ? nilaiBaru : (Number(draftLama.wh2) || 0),
+            jam_wh2: whKey === 'wh2' ? jamSekarang : (draftLama.jam_wh2 || ''),
+            updated_at: new Date().toISOString()
+        };
+
+        window.dataMasterJadwal[keyHari].draft_muat[index] = draftBaru;
+
+        const refMaster = ambilRefMasterJadwal();
+        if (refMaster) {
+            refMaster.child(`${keyHari}/draft_muat/${index}`).update(draftBaru).catch((err) => {
+                console.error('Gagal simpan draft_muat:', err);
+            });
+        }
+
+        renderLaporanDraftMuat();
+        if (typeof showToast === 'function') {
+            showToast(`Draft ${whKey.toUpperCase()} tersimpan (${nilaiBaru.toLocaleString('id-ID')} Krt).`, 'success');
+        }
+    }
+
+    function renderTabelRekapWH(containerId, rows, grandTotal, labelWH, warna) {
+        const el = document.getElementById(containerId);
+        if (!el) return;
+
+        if (!rows.length) {
+            el.innerHTML = `<p class="text-center py-6 text-[11px] text-slate-400 italic">Belum ada draft muatan tercatat di ${labelWH}.</p>`;
+            return;
+        }
+
+        const headBg = warna === 'blue'
+            ? 'bg-blue-50/80 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300'
+            : 'bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300';
+
+        const bodyRows = rows.map((r, i) => `
+            <tr class="border-t border-slate-100 dark:border-slate-800/80">
+                <td class="px-3 py-2 text-[10px] font-bold text-slate-400">${i + 1}</td>
+                <td class="px-3 py-2 text-[10px] font-black text-slate-800 dark:text-slate-100 uppercase">${r.ekspedisi}</td>
+                <td class="px-3 py-2 text-[10px] font-semibold text-slate-600 dark:text-slate-300">${r.sopir}</td>
+                <td class="px-3 py-2 text-[10px] font-bold text-slate-700 dark:text-slate-200">${r.nopol}</td>
+                <td class="px-3 py-2 text-[10px] text-slate-500 dark:text-slate-400">${r.tujuan}</td>
+                <td class="px-3 py-2 text-[10px] font-black text-right text-slate-800 dark:text-slate-100">${r.jumlah.toLocaleString('id-ID')} Krt</td>
+            </tr>`).join('');
+
+        el.innerHTML = `
+            <table class="w-full text-left border-collapse min-w-[480px]">
+                <thead class="${headBg}">
+                    <tr>
+                        <th class="px-3 py-2 text-[9px] font-black uppercase">No</th>
+                        <th class="px-3 py-2 text-[9px] font-black uppercase">Ekspedisi</th>
+                        <th class="px-3 py-2 text-[9px] font-black uppercase">Sopir</th>
+                        <th class="px-3 py-2 text-[9px] font-black uppercase">Nopol</th>
+                        <th class="px-3 py-2 text-[9px] font-black uppercase">Tujuan</th>
+                        <th class="px-3 py-2 text-[9px] font-black uppercase text-right">Draft Muat</th>
+                    </tr>
+                </thead>
+                <tbody>${bodyRows}</tbody>
+                <tfoot>
+                    <tr class="border-t-2 border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/60">
+                        <td colspan="5" class="px-3 py-2.5 text-[10px] font-black uppercase text-slate-700 dark:text-slate-200">
+                            Total Draft Muat ${labelWH}
+                        </td>
+                        <td class="px-3 py-2.5 text-xs font-black text-right text-slate-900 dark:text-white">
+                            ${grandTotal.toLocaleString('id-ID')} Krt
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>`;
+    }
 
 
-    // REGISTRASI SERVICE WORKER (JADILO v0.1.7)
+    // REGISTRASI SERVICE WORKER (JADILO v0.1.9)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // PERBAIKAN: Menggunakan './sw.js' agar mendeteksi sub-folder repositori GitHub Pages
