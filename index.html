@@ -7819,7 +7819,13 @@
                 savedData = snap.val();
             }
 
-            if (!savedData || !Array.isArray(savedData.items)) return null;
+            if (!savedData) return null;
+
+            const rawItems = Array.isArray(savedData.items)
+                ? savedData.items
+                : (savedData.items && typeof savedData.items === 'object' ? Object.values(savedData.items) : []);
+
+            if (!rawItems.length) return savedData;
 
             const state = window._stateBonKbkb || {};
             const customBaru = { ...(state.customValues || {}) };
@@ -7827,42 +7833,58 @@
                 ? listArmada
                 : (Array.isArray(state.listArmada) ? state.listArmada : []);
 
-            savedData.items.forEach((savedRow, idx) => {
-                if (!savedRow) return;
-                const cocokArmada = armadaAktif.find((a, i) =>
-                    String(a?.id ?? i) === String(savedRow.id ?? idx)
+            rawItems.forEach((savedRow, idx) => {
+                if (!savedRow || typeof savedRow !== 'object') return;
+
+                let cocokIdx = armadaAktif.findIndex((a, i) =>
+                    a && a.id !== undefined && savedRow.id !== undefined && String(a.id) === String(savedRow.id)
                 );
-                const itemId = cocokArmada ? (cocokArmada.id ?? idx) : (savedRow.id ?? idx);
-                const rowUid = `${keyHari}_${gudang}_${itemId}`;
 
-                const kiriSaved = Math.max(0, parseInt(savedRow.titipan_wh_lain, 10) || 0);
-                const tengahSaved = Math.max(0, parseInt(savedRow.muat_utama, 10) || 0);
-                const kananSaved = Math.max(0, parseInt(savedRow.titipan_khusus, 10) || 0);
+                if (cocokIdx === -1 && savedRow.nopol) {
+                    const nopolSaved = String(savedRow.nopol).trim().toUpperCase();
+                    const tujuanSaved = String(savedRow.tujuan || '').trim().toUpperCase();
+                    cocokIdx = armadaAktif.findIndex((a) => {
+                        const nopolA = String(a?.nopol || a?.Nopol || '').trim().toUpperCase();
+                        const tujuanA = String(a?.tujuan || a?.Tujuan || '').trim().toUpperCase();
+                        return nopolA && nopolA === nopolSaved && (!tujuanSaved || tujuanA === tujuanSaved);
+                    });
+                }
 
-                customBaru[rowUid] = {
-                    ...(customBaru[rowUid] || {}),
+                if (cocokIdx === -1 && idx < armadaAktif.length) {
+                    cocokIdx = idx;
+                }
+
+                const targetArmada = cocokIdx >= 0 ? armadaAktif[cocokIdx] : null;
+                const itemId = targetArmada ? (targetArmada.id ?? cocokIdx) : (savedRow.id ?? idx);
+
+                const kiriSaved = Math.max(0, parseInt(savedRow.titipan_wh_lain ?? savedRow.kiri ?? 0, 10) || 0);
+                const tengahSaved = Math.max(0, parseInt(savedRow.muat_utama ?? savedRow.tengah ?? 0, 10) || 0);
+                const kananSaved = Math.max(0, parseInt(savedRow.titipan_khusus ?? savedRow.kanan ?? 0, 10) || 0);
+
+                const nilaiRow = {
                     kiri: kiriSaved,
                     tengah: tengahSaved,
                     kanan: kananSaved
                 };
+
+                const uidUtama = `${keyHari}_${gudang}_${itemId}`;
+                const uidIdx = `${keyHari}_${gudang}_${idx}`;
+
+                customBaru[uidUtama] = { ...(customBaru[uidUtama] || {}), ...nilaiRow };
+                customBaru[uidIdx] = { ...(customBaru[uidIdx] || {}), ...nilaiRow };
             });
 
+            const currentState = window._stateBonKbkb || {};
             window._stateBonKbkb = {
-                ...state,
+                ...currentState,
                 keyHari,
                 customValues: customBaru,
+                _loadedBonToken: `${keyHari}_${gudang}`,
                 savedBonKbkb: {
-                    ...(state.savedBonKbkb || {}),
+                    ...(currentState.savedBonKbkb || {}),
                     [gudang.toLowerCase()]: savedData
                 }
             };
-
-            if (window.dataMasterJadwal && window.dataMasterJadwal[keyHari]) {
-                window.dataMasterJadwal[keyHari].bon_kbkb = {
-                    ...(window.dataMasterJadwal[keyHari].bon_kbkb || {}),
-                    [gudang.toLowerCase()]: savedData
-                };
-            }
 
             return savedData;
         } catch (err) {
@@ -7971,11 +7993,27 @@
 
         const tokenLoadBon = `${keyHariAktif}_${whTarget}`;
         if (keyHariAktif && state._loadedBonToken !== tokenLoadBon) {
-            state._loadedBonToken = tokenLoadBon;
-            await muatBonKbkbDariFirebase(keyHariAktif, whTarget, armada);
+            if (!state._loadingBonPromise || state._loadingBonKey !== tokenLoadBon) {
+                state._loadingBonKey = tokenLoadBon;
+                state._loadingBonPromise = muatBonKbkbDariFirebase(keyHariAktif, whTarget, armada)
+                    .then((res) => {
+                        if (window._stateBonKbkb && window._stateBonKbkb._loadingBonKey === tokenLoadBon) {
+                            window._stateBonKbkb._loadedBonToken = tokenLoadBon;
+                        }
+                        return res;
+                    })
+                    .finally(() => {
+                        if (window._stateBonKbkb && window._stateBonKbkb._loadingBonKey === tokenLoadBon) {
+                            window._stateBonKbkb._loadingBonPromise = null;
+                            window._stateBonKbkb._loadingBonKey = '';
+                        }
+                    });
+            }
+            await state._loadingBonPromise;
         }
 
-        state.customValues = state.customValues || {};
+        const aktifState = window._stateBonKbkb || state;
+        aktifState.customValues = aktifState.customValues || {};
 
         let sumKiri = 0;
         let sumTengah = 0;
@@ -7984,7 +8022,7 @@
         container.innerHTML = armada.map((item, idx) => {
             const rowUid = `${keyHariAktif || 'hari'}_${whTarget}_${item.id ?? idx}`;
             const def = ambilNilaiDefaultBonArmada(item, whTarget);
-            const ov = state.customValues[rowUid] || {};
+            const ov = aktifState.customValues[rowUid] || {};
 
             const valKiri = ov.kiri !== undefined ? (parseInt(ov.kiri, 10) || 0) : def.kiri;
             const valTengah = ov.tengah !== undefined ? (parseInt(ov.tengah, 10) || 0) : def.tengah;
@@ -8008,7 +8046,7 @@
                                 ${idx + 1}. ${ekspedisi}
                             </span>
                             <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                                - ${kota}
+- ${kota}
                             </span>
                             <div class="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
                                 ${driver} (${nopol})
@@ -8210,6 +8248,44 @@
         const whTarget = sinkronGudangBonKbkbUser();
         const tanggalTeks = String(state.labelTanggal || '-').toUpperCase();
 
+        const buatBlokTigaSlot = (valKiri, valTengah, valKanan, isTotal = false) => {
+            const k = Math.max(0, parseInt(valKiri, 10) || 0);
+            const t = Math.max(0, parseInt(valTengah, 10) || 0);
+            const r = Math.max(0, parseInt(valKanan, 10) || 0);
+
+            const adaKiri = k > 0;
+            const adaTengah = t > 0;
+            const adaKanan = r > 0;
+
+            const teksKiri = adaKiri ? k.toLocaleString('id-ID') : '';
+            const teksKanan = adaKanan ? r.toLocaleString('id-ID') : '';
+
+            let teksTengah = '';
+            if (adaTengah) {
+                teksTengah = t.toLocaleString('id-ID');
+            } else if (!adaKiri && !adaKanan) {
+                teksTengah = '0';
+            }
+
+            const kiriHtml = adaKiri
+                ? `${teksKiri}${(adaTengah || adaKanan) ? ' +' : ''}`
+                : '';
+
+            const kananHtml = adaKanan
+                ? `${(adaTengah || adaKiri) ? '+ ' : ''}${teksKanan}`
+                : '';
+
+            const clsWrapper = isTotal ? 'total-rincian' : 'ket-grid';
+
+            return `
+                <div class="${clsWrapper}">
+                    <span class="slot-kiri">${kiriHtml}</span>
+                    <span class="slot-tengah">${teksTengah}</span>
+                    <span class="slot-kanan">${kananHtml}</span>
+                </div>
+            `;
+        };
+
         let sumKiri = 0;
         let sumTengah = 0;
         let sumKanan = 0;
@@ -8234,45 +8310,24 @@
             const kota = String(item.kota || item.Kota || item.KOTA || '-').trim().toUpperCase();
             const driver = String(item.driver || item.Driver || item.DRIVER || '-').trim().toUpperCase();
 
-            const teksKiri = kiri > 0 ? kiri.toLocaleString('id-ID') : '';
-            const teksTengah = tengah > 0 ? tengah.toLocaleString('id-ID') : '';
-            const teksKanan = kanan > 0 ? kanan.toLocaleString('id-ID') : '';
-
             return `
                 <tr>
-                    <td class="tc">${idx + 1}</td>
-                    <td>${ekspedisi}</td>
-                    <td class="tc">${nopol}</td>
-                    <td class="tc">${jenisMobil}</td>
-                    <td>${tujuan}</td>
-                    <td>${kota}</td>
-                    <td>${driver}</td>
-                    <td class="ket-cell">
-                        <div class="ket-grid">
-                            <span class="ket-col ket-kiri">${teksKiri}</span>
-                            <span class="ket-col ket-tengah">${teksTengah}</span>
-                            <span class="ket-col ket-kanan">${teksKanan}</span>
-                        </div>
-                    </td>
+                    <td class="tc col-auto">${idx + 1}</td>
+                    <td class="col-auto">${ekspedisi}</td>
+                    <td class="tc col-auto">${nopol}</td>
+                    <td class="tc col-auto">${jenisMobil}</td>
+                    <td class="col-auto">${tujuan}</td>
+                    <td class="col-auto">${kota}</td>
+                    <td class="col-auto">${driver}</td>
+                    <td class="ket-cell col-auto">${buatBlokTigaSlot(kiri, tengah, kanan, false)}</td>
                 </tr>
             `;
         }).join('');
 
         const totalMuat = sumKiri + sumTengah + sumKanan;
-        const aktifKiri = Number(sumKiri) > 0;
-        const aktifTengah = Number(sumTengah) > 0;
-        const aktifKanan = Number(sumKanan) > 0;
+        const totalRincianHtml = buatBlokTigaSlot(sumKiri, sumTengah, sumKanan, true);
 
-        const valTotalKiri = aktifKiri ? Number(sumKiri).toLocaleString('id-ID') : '';
-        const valTotalKanan = aktifKanan ? Number(sumKanan).toLocaleString('id-ID') : '';
-        const valTotalTengah = aktifTengah
-            ? Number(sumTengah).toLocaleString('id-ID')
-            : (!aktifKiri && !aktifKanan ? '0' : '');
-
-        const plusSetelahKiri = aktifKiri && (aktifTengah || aktifKanan) ? ' +' : '';
-        const plusSetelahTengah = aktifTengah && aktifKanan ? ' +' : '';
-
-        const winCetak = window.open('', '_blank', 'width=1024,height=720');
+        const winCetak = window.open('', '_blank', 'width=1280,height=760');
         if (!winCetak) {
             window.print();
             return;
@@ -8287,82 +8342,88 @@
                 <meta charset="UTF-8">
                 <title>JADWAL PENGIRIMAN - ${tanggalTeks}</title>
                 <style>
-                    body { font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif; color: #000; margin: 18px 22px; font-size: 12px; font-weight: 700; }
-                    table.jadwal { width: 100%; border-collapse: collapse; }
-                    table.jadwal th, table.jadwal td { border: 1px solid #000; padding: 4px 6px; vertical-align: middle; font-weight: 700; }
+                    @page { size: 330mm 215mm landscape; margin: 12mm; }
+                    body { font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif; color: #000; margin: 14px 18px; font-size: 12px; font-weight: 700; }
+                    table.jadwal { width: 100%; border-collapse: collapse; table-layout: auto; }
+                    table.jadwal th, table.jadwal td { border: 1px solid #000; padding: 4px 8px; vertical-align: middle; font-weight: 700; }
+                    .col-auto { white-space: nowrap; }
                     .kop-title { font-size: 20px; font-weight: 700; text-align: center; letter-spacing: 0.5px; }
-                    .ttd-hdr { background: #f2f2f2; font-weight: 700; text-align: center; font-size: 11px; width: 105px; }
+                    .ttd-hdr { background: #f2f2f2; font-weight: 700; text-align: center; font-size: 11px; white-space: nowrap; padding-left: 12px !important; padding-right: 12px !important; }
                     .ttd-space { height: 34px; }
-                    .ttd-nama { font-weight: 700; text-align: center; font-size: 10px; }
-                    .meta-pt { font-weight: 700; font-size: 12px; }
-                    .meta-tgl { font-weight: 700; font-size: 13px; text-align: center; }
-                    th.hdr-col { background: #e6e6e6; font-weight: 700; text-align: center; font-size: 11px; text-transform: uppercase; }
+                    .ttd-nama { font-weight: 700; text-align: center; font-size: 10px; white-space: nowrap; }
+                    .meta-pt { font-weight: 700; font-size: 12px; white-space: nowrap; }
+                    .meta-tgl { font-weight: 700; font-size: 13px; text-align: center; white-space: nowrap; }
+                    th.hdr-col { background: #e6e6e6; font-weight: 700; text-align: center; font-size: 11px; text-transform: uppercase; white-space: nowrap; }
                     .tc { text-align: center; }
-                    .ket-cell { padding: 3px 6px !important; }
-                    .ket-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; gap: 6px; font-weight: 700; font-size: 12px; }
-                    .ket-kiri { text-align: left; }
-                    .ket-tengah { text-align: center; }
-                    .ket-kanan { text-align: right; }
-                    .total-ket-cell { padding: 4px 6px !important; font-weight: 700; font-size: 12px; }
-                    .total-rincian { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; gap: 6px; }
-                    .total-pos-kiri { text-align: left; }
-                    .total-pos-tengah { text-align: center; }
-                    .total-pos-kanan { text-align: right; }
-                    .total-muat-baris { margin-top: 3px; text-align: left; }
+                    .ket-cell { padding: 3px 8px !important; }
+                    .ket-grid, .total-rincian { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 4px; width: 100%; font-weight: 700; font-size: 12px; white-space: nowrap; }
+                    .slot-kiri { text-align: right; }
+                    .slot-tengah { text-align: center; padding: 0 2px; }
+                    .slot-kanan { text-align: left; }
+                    .total-ket-cell { padding: 4px 8px !important; font-weight: 700; font-size: 12px; white-space: nowrap; }
+                    .total-muat-baris { margin-top: 3px; text-align: left; white-space: nowrap; }
                     .form-no { margin-top: 8px; font-size: 10px; font-weight: 700; }
-                    @media print { body { margin: 8mm; } }
+                    @media print {
+                        body { margin: 0; }
+                        .cetak-rotasi {
+                            width: 306mm;
+                            transform: rotate(-90deg);
+                            transform-origin: top left;
+                            position: relative;
+                            top: 308mm;
+                            left: 12mm;
+                        }
+                    }
                 </style>
             </head>
             <body>
-                <table class="jadwal">
-                    <tr>
-                        <td colspan="2" rowspan="3" style="border-bottom:none; text-align:center; vertical-align:middle; padding:4px;">
-                            <img id="logoUthCetak"
-                                src="${logoUrlCetak}"
-                                data-fallbacks='["./uth.png","https://raw.githubusercontent.com/komputerwh2-svg/jadilo.github.io/main/uth.png"]'
-                                alt="Logo UTH"
-                                style="max-height:54px; max-width:130px; object-fit:contain; display:inline-block;">
-                        </td>
-                        <td colspan="4" rowspan="3" class="kop-title" style="border-bottom:none;">JADWAL PENGIRIMAN</td>
-                        <td class="ttd-hdr">DIBUAT</td>
-                        <td class="ttd-hdr">MENGETAHUI</td>
-                    </tr>
-                    <tr>
-                        <td rowspan="2" class="ttd-space"></td>
-                        <td rowspan="2" class="ttd-space"></td>
-                    </tr>
-                    <tr></tr>
-                    <tr>
-                        <td colspan="2" class="meta-pt">PT. ULAM TIBA HALIM</td>
-                        <td colspan="4" class="meta-tgl">TANGGAL : ${tanggalTeks}</td>
-                        <td class="ttd-nama">KUSUMA</td>
-                        <td class="ttd-nama">B DIMAS W</td>
-                    </tr>
-                    <tr>
-                        <th class="hdr-col" style="width:32px;">NO</th>
-                        <th class="hdr-col" style="width:115px;">EXPEDISI</th>
-                        <th class="hdr-col" style="width:92px;">NOMOR POLISI</th>
-                        <th class="hdr-col" style="width:95px;">JENIS MOBIL</th>
-                        <th class="hdr-col" style="width:115px;">TUJUAN</th>
-                        <th class="hdr-col" style="width:105px;">KOTA</th>
-                        <th class="hdr-col" style="width:105px;">DRIVER</th>
-                        <th class="hdr-col" style="width:190px;">KETERANGAN</th>
-                    </tr>
-                    ${barisHtml}
-                    <tr>
-                        <td colspan="7" style="border-left:none; border-bottom:none;"></td>
-                        <td class="total-ket-cell">
-                            <div class="total-rincian">
-                                <span class="total-pos-kiri">${valTotalKiri}${plusSetelahKiri}</span>
-                                <span class="total-pos-tengah">${valTotalTengah}${plusSetelahTengah}</span>
-                                <span class="total-pos-kanan">${valTotalKanan}</span>
-                            </div>
-                            <div class="total-muat-baris">Total Muat = ${totalMuat.toLocaleString('id-ID')} Karton</div>
-                        </td>
-                    </tr>
-                </table>
+                <div class="cetak-rotasi">
+                    <table class="jadwal">
+                        <tr>
+                            <td colspan="2" rowspan="3" style="border-bottom:none; text-align:center; vertical-align:middle; padding:4px;">
+                                <img id="logoUthCetak"
+                                    src="${logoUrlCetak}"
+                                    data-fallbacks='["./uth.png","https://raw.githubusercontent.com/komputerwh2-svg/jadilo.github.io/main/uth.png"]'
+                                    alt="Logo UTH"
+                                    style="max-height:54px; max-width:130px; object-fit:contain; display:inline-block;">
+                            </td>
+                            <td colspan="4" rowspan="3" class="kop-title" style="border-bottom:none;">JADWAL PENGIRIMAN</td>
+                            <td class="ttd-hdr">DIBUAT</td>
+                            <td class="ttd-hdr">MENGETAHUI</td>
+                        </tr>
+                        <tr>
+                            <td rowspan="2" class="ttd-space"></td>
+                            <td rowspan="2" class="ttd-space"></td>
+                        </tr>
+                        <tr></tr>
+                        <tr>
+                            <td colspan="2" class="meta-pt">PT. ULAM TIBA HALIM</td>
+                            <td colspan="4" class="meta-tgl">TANGGAL : ${tanggalTeks}</td>
+                            <td class="ttd-nama">KUSUMA</td>
+                            <td class="ttd-nama">B DIMAS W</td>
+                        </tr>
+                        <tr>
+                            <th class="hdr-col">NO</th>
+                            <th class="hdr-col">EXPEDISI</th>
+                            <th class="hdr-col">NOMOR POLISI</th>
+                            <th class="hdr-col">JENIS MOBIL</th>
+                            <th class="hdr-col">TUJUAN</th>
+                            <th class="hdr-col">KOTA</th>
+                            <th class="hdr-col">DRIVER</th>
+                            <th class="hdr-col">KETERANGAN</th>
+                        </tr>
+                        ${barisHtml}
+                        <tr>
+                            <td colspan="7" style="border-left:none; border-bottom:none;"></td>
+                            <td class="total-ket-cell">
+                                ${totalRincianHtml}
+                                <div class="total-muat-baris">Total Muat = ${totalMuat.toLocaleString('id-ID')} Karton</div>
+                            </td>
+                        </tr>
+                    </table>
 
-                <div class="form-no">NO Formulir : 02.UM/01-05-02/01/0</div>
+                    <div class="form-no">NO Formulir : 02.UM/01-05-02/01/0</div>
+                </div>
 
                 <script>
                     (function() {
@@ -8373,11 +8434,27 @@
                         } catch (_) {}
                         let idxFb = 0;
                         let sudahPrint = false;
+                        let sudahDitutup = false;
+
+                        const tutupWindowCetak = () => {
+                            if (sudahDitutup) return;
+                            sudahDitutup = true;
+                            setTimeout(() => {
+                                try {
+                                    if (!window.closed) window.close();
+                                } catch (_) {}
+                            }, 120);
+                        };
+
+                        window.addEventListener('afterprint', tutupWindowCetak);
 
                         const mulaiPrint = () => {
                             if (sudahPrint) return;
                             sudahPrint = true;
-                            setTimeout(() => window.print(), 180);
+                            setTimeout(() => {
+                                window.print();
+                                setTimeout(tutupWindowCetak, 450);
+                            }, 180);
                         };
 
                         if (img) {
