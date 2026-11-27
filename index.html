@@ -8417,28 +8417,25 @@
 
         // Jika dibuka dari dalam iframe Warehouse Logistik, kirim langsung ke antrean print_jobs parent
         if (window.parent && window.parent !== window) {
+            const bodyUntukPrintJobs = bodyDokumenCetak.replace(
+                '<img id="logoUthCetak"',
+                `<img id="logoUthCetak" onerror="if(!this.dataset.fb1){this.dataset.fb1='1';this.src='https://komputerwh2-svg.github.io/jadilo.github.io/uth.png';}else if(!this.dataset.fb2){this.dataset.fb2='1';this.src='./uth.png';}else{this.style.display='none';}"`
+            );
+
             const styleUntukPrintJobs = `
                 <style>
-                    @page { size: 330mm 215mm landscape; margin: 10mm; }
                     .jadilo-print-job-wrap {
                         font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
                         color: #000;
-                        font-size: 12px;
+                        font-size: 11px;
                         font-weight: 700;
                         width: 100%;
-                        max-width: 100%;
                         box-sizing: border-box;
                         background: #fff;
-                        padding: 4mm;
                     }
                     .jadilo-print-job-wrap .cetak-rotasi {
                         width: 100%;
-                        max-width: 100%;
                         box-sizing: border-box;
-                        transform: none;
-                        position: static;
-                        top: auto;
-                        left: auto;
                     }
                     .jadilo-print-job-wrap table.jadwal {
                         width: 100%;
@@ -8448,20 +8445,20 @@
                     .jadilo-print-job-wrap table.jadwal th,
                     .jadilo-print-job-wrap table.jadwal td {
                         border: 1px solid #000;
-                        padding: 4px 8px;
+                        padding: 3px 6px;
                         vertical-align: middle;
                         font-weight: 700;
                     }
                     .jadilo-print-job-wrap .col-auto { white-space: nowrap; }
-                    .jadilo-print-job-wrap .kop-title { font-size: 20px; font-weight: 700; text-align: center; letter-spacing: 0.5px; }
-                    .jadilo-print-job-wrap .ttd-hdr { background: #f2f2f2; font-weight: 700; text-align: center; font-size: 11px; white-space: nowrap; padding-left: 12px !important; padding-right: 12px !important; }
-                    .jadilo-print-job-wrap .ttd-space { height: 34px; }
+                    .jadilo-print-job-wrap .kop-title { font-size: 18px; font-weight: 700; text-align: center; letter-spacing: 0.5px; }
+                    .jadilo-print-job-wrap .ttd-hdr { background: #f2f2f2; font-weight: 700; text-align: center; font-size: 10px; white-space: nowrap; padding-left: 10px !important; padding-right: 10px !important; }
+                    .jadilo-print-job-wrap .ttd-space { height: 28px; }
                     .jadilo-print-job-wrap .ttd-nama { font-weight: 700; text-align: center; font-size: 10px; white-space: nowrap; }
-                    .jadilo-print-job-wrap .meta-pt { font-weight: 700; font-size: 12px; white-space: nowrap; }
-                    .jadilo-print-job-wrap .meta-tgl { font-weight: 700; font-size: 13px; text-align: center; white-space: nowrap; }
-                    .jadilo-print-job-wrap th.hdr-col { background: #e6e6e6; font-weight: 700; text-align: center; font-size: 11px; text-transform: uppercase; white-space: nowrap; }
+                    .jadilo-print-job-wrap .meta-pt { font-weight: 700; font-size: 11px; white-space: nowrap; }
+                    .jadilo-print-job-wrap .meta-tgl { font-weight: 700; font-size: 12px; text-align: center; white-space: nowrap; }
+                    .jadilo-print-job-wrap th.hdr-col { background: #e6e6e6; font-weight: 700; text-align: center; font-size: 10px; text-transform: uppercase; white-space: nowrap; }
                     .jadilo-print-job-wrap .tc { text-align: center; }
-                    .jadilo-print-job-wrap .ket-cell { padding: 3px 8px !important; }
+                    .jadilo-print-job-wrap .ket-cell { padding: 3px 6px !important; }
                     .jadilo-print-job-wrap .ket-grid,
                     .jadilo-print-job-wrap .total-rincian {
                         display: grid;
@@ -8470,25 +8467,32 @@
                         gap: 4px;
                         width: 100%;
                         font-weight: 700;
-                        font-size: 12px;
+                        font-size: 11px;
                         white-space: nowrap;
                     }
                     .jadilo-print-job-wrap .slot-kiri { text-align: right; }
                     .jadilo-print-job-wrap .slot-tengah { text-align: center; padding: 0 2px; }
                     .jadilo-print-job-wrap .slot-kanan { text-align: left; }
-                    .jadilo-print-job-wrap .total-ket-cell { padding: 4px 8px !important; font-weight: 700; font-size: 12px; white-space: nowrap; }
+                    .jadilo-print-job-wrap .total-ket-cell { padding: 4px 6px !important; font-weight: 700; font-size: 11px; white-space: nowrap; }
                     .jadilo-print-job-wrap .total-muat-baris { margin-top: 3px; text-align: left; white-space: nowrap; }
-                    .jadilo-print-job-wrap .form-no { margin-top: 8px; font-size: 10px; font-weight: 700; }
+                    .jadilo-print-job-wrap .form-no { margin-top: 6px; font-size: 9px; font-weight: 700; }
+
                     @media print {
                         .jadilo-print-job-wrap {
+                            width: 190mm;
+                            max-width: 190mm;
+                            margin: 0 auto;
                             padding: 0;
-                            page-break-inside: avoid;
-                            break-inside: avoid;
                         }
                         .jadilo-print-job-wrap .cetak-rotasi {
-                            transform: none !important;
-                            position: static !important;
-                            width: 100% !important;
+                            width: 270mm;
+                            transform: rotate(-90deg) scale(0.7);
+                            transform-origin: top left;
+                            position: relative;
+                            top: 192mm;
+                            left: 0;
+                            page-break-inside: avoid;
+                            break-inside: avoid;
                         }
                     }
                 </style>
@@ -8497,7 +8501,7 @@
             const htmlUntukPrintJobs = `
                 ${styleUntukPrintJobs}
                 <div class="jadilo-print-job-wrap">
-                    ${bodyDokumenCetak}
+                    ${bodyUntukPrintJobs}
                 </div>
             `;
 
@@ -8513,81 +8517,6 @@
             }, '*');
             return;
         }
-
-        const winCetak = window.open('', '_blank', 'width=1280,height=760');
-        if (!winCetak) {
-            window.print();
-            return;
-        }
-
-        winCetak.document.write(`
-            <!DOCTYPE html>
-            <html lang="id">
-            <head>
-                <meta charset="UTF-8">
-                <title>JADWAL PENGIRIMAN - ${tanggalTeks}</title>
-                ${styleDokumenCetak}
-            </head>
-            <body>
-                ${bodyDokumenCetak}
-
-                <script>
-                    (function() {
-                        const img = document.getElementById('logoUthCetak');
-                        let fallbacks = [];
-                        try {
-                            fallbacks = JSON.parse(img.getAttribute('data-fallbacks') || '[]').filter(u => u && u !== img.src);
-                        } catch (_) {}
-                        let idxFb = 0;
-                        let sudahPrint = false;
-                        let sudahDitutup = false;
-
-                        const tutupWindowCetak = () => {
-                            if (sudahDitutup) return;
-                            sudahDitutup = true;
-                            setTimeout(() => {
-                                try {
-                                    if (!window.closed) window.close();
-                                } catch (_) {}
-                            }, 120);
-                        };
-
-                        window.addEventListener('afterprint', tutupWindowCetak);
-
-                        const mulaiPrint = () => {
-                            if (sudahPrint) return;
-                            sudahPrint = true;
-                            setTimeout(() => {
-                                window.print();
-                                setTimeout(tutupWindowCetak, 450);
-                            }, 180);
-                        };
-
-                        if (img) {
-                            img.onerror = function() {
-                                if (idxFb < fallbacks.length) {
-                                    img.src = fallbacks[idxFb++];
-                                } else {
-                                    img.style.display = 'none';
-                                    mulaiPrint();
-                                }
-                            };
-                            img.onload = mulaiPrint;
-                            if (img.complete && img.naturalWidth > 0) {
-                                mulaiPrint();
-                            } else {
-                                setTimeout(mulaiPrint, 1200);
-                            }
-                        } else {
-                            window.onload = mulaiPrint;
-                            setTimeout(mulaiPrint, 300);
-                        }
-                    })();
-                <\/script>
-            </body>
-            </html>
-        `);
-        winCetak.document.close();
     }
 
     async function simpanBonKbkbKeFirebase() {
