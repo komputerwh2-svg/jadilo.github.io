@@ -8264,7 +8264,7 @@
             if (adaTengah) {
                 teksTengah = t.toLocaleString('id-ID');
             } else if (!adaKiri && !adaKanan) {
-                teksTengah = '0';
+                teksTengah = '-';
             }
 
             const kiriHtml = adaKiri
@@ -8325,200 +8325,11 @@
         }).join('');
 
         const totalMuat = sumKiri + sumTengah + sumKanan;
-        const totalRincianHtml = buatBlokTigaSlot(sumKiri, sumTengah, sumKanan, true);
+        const adaTitipan = (sumKiri > 0) || (sumKanan > 0);
+        const totalRincianHtml = adaTitipan
+            ? buatBlokTigaSlot(sumKiri, sumTengah, sumKanan, true)
+            : '';
         const logoUrlCetak = 'https://komputerwh2-svg.github.io/jadilo.github.io/uth.png';
-
-        const styleDokumenCetak = `
-            <style>
-                @page { size: 330mm 215mm landscape; margin: 12mm; }
-                body { font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif; color: #000; margin: 14px 18px; font-size: 12px; font-weight: 700; }
-                table.jadwal { width: 100%; border-collapse: collapse; table-layout: auto; }
-                table.jadwal th, table.jadwal td { border: 1px solid #000; padding: 4px 8px; vertical-align: middle; font-weight: 700; }
-                .col-auto { white-space: nowrap; }
-                .kop-title { font-size: 20px; font-weight: 700; text-align: center; letter-spacing: 0.5px; }
-                .ttd-hdr { background: #f2f2f2; font-weight: 700; text-align: center; font-size: 11px; white-space: nowrap; padding-left: 12px !important; padding-right: 12px !important; }
-                .ttd-space { height: 34px; }
-                .ttd-nama { font-weight: 700; text-align: center; font-size: 10px; white-space: nowrap; }
-                .meta-pt { font-weight: 700; font-size: 12px; white-space: nowrap; }
-                .meta-tgl { font-weight: 700; font-size: 13px; text-align: center; white-space: nowrap; }
-                th.hdr-col { background: #e6e6e6; font-weight: 700; text-align: center; font-size: 11px; text-transform: uppercase; white-space: nowrap; }
-                .tc { text-align: center; }
-                .ket-cell { padding: 3px 8px !important; }
-                .ket-grid, .total-rincian { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 4px; width: 100%; font-weight: 700; font-size: 12px; white-space: nowrap; }
-                .slot-kiri { text-align: right; }
-                .slot-tengah { text-align: center; padding: 0 2px; }
-                .slot-kanan { text-align: left; }
-                .total-ket-cell { padding: 4px 8px !important; font-weight: 700; font-size: 12px; white-space: nowrap; }
-                .total-muat-baris { margin-top: 3px; text-align: left; white-space: nowrap; }
-                .form-no { margin-top: 8px; font-size: 10px; font-weight: 700; }
-                @media print {
-                    body { margin: 0; }
-                    .cetak-rotasi {
-                        width: 306mm;
-                        transform: rotate(-90deg);
-                        transform-origin: top left;
-                        position: relative;
-                        top: 308mm;
-                        left: 12mm;
-                    }
-                }
-            </style>
-        `;
-
-        const bodyDokumenCetak = `
-            <div class="cetak-rotasi">
-                <table class="jadwal">
-                    <tr>
-                        <td colspan="2" rowspan="3" style="border-bottom:none; text-align:center; vertical-align:middle; padding:4px;">
-                            <img id="logoUthCetak"
-                                src="${logoUrlCetak}"
-                                data-fallbacks='["./uth.png","https://raw.githubusercontent.com/komputerwh2-svg/jadilo.github.io/main/uth.png"]'
-                                alt="Logo UTH"
-                                style="max-height:54px; max-width:130px; object-fit:contain; display:inline-block;">
-                        </td>
-                        <td colspan="4" rowspan="3" class="kop-title" style="border-bottom:none;">JADWAL PENGIRIMAN</td>
-                        <td class="ttd-hdr">DIBUAT</td>
-                        <td class="ttd-hdr">MENGETAHUI</td>
-                    </tr>
-                    <tr>
-                        <td rowspan="2" class="ttd-space"></td>
-                        <td rowspan="2" class="ttd-space"></td>
-                    </tr>
-                    <tr></tr>
-                    <tr>
-                        <td colspan="2" class="meta-pt">PT. ULAM TIBA HALIM</td>
-                        <td colspan="4" class="meta-tgl">TANGGAL : ${tanggalTeks}</td>
-                        <td class="ttd-nama">KUSUMA</td>
-                        <td class="ttd-nama">B DIMAS W</td>
-                    </tr>
-                    <tr>
-                        <th class="hdr-col">NO</th>
-                        <th class="hdr-col">EXPEDISI</th>
-                        <th class="hdr-col">NOMOR POLISI</th>
-                        <th class="hdr-col">JENIS MOBIL</th>
-                        <th class="hdr-col">TUJUAN</th>
-                        <th class="hdr-col">KOTA</th>
-                        <th class="hdr-col">DRIVER</th>
-                        <th class="hdr-col">KETERANGAN</th>
-                    </tr>
-                    ${barisHtml}
-                    <tr>
-                        <td colspan="7" style="border-left:none; border-bottom:none;"></td>
-                        <td class="total-ket-cell">
-                            ${totalRincianHtml}
-                            <div class="total-muat-baris">Total Muat = ${totalMuat.toLocaleString('id-ID')} Karton</div>
-                        </td>
-                    </tr>
-                </table>
-
-                <div class="form-no">NO Formulir : 02.UM/01-05-02/01/0</div>
-            </div>
-        `;
-
-        // Jika dibuka dari dalam iframe Warehouse Logistik, kirim langsung ke antrean print_jobs parent
-        if (window.parent && window.parent !== window) {
-            const urlLogoUtamaJadilo = 'https://komputerwh2-svg.github.io/jadilo.github.io/uth.png';
-            const urlLogoCadangan1 = 'https://raw.githubusercontent.com/komputerwh2-svg/jadilo.github.io/main/uth.png';
-            const urlLogoCadangan2 = 'https://komputerwh2-svg.github.io/uth.png';
-
-            const bodyUntukPrintJobs = bodyDokumenCetak
-                .replace(`src="${logoUrlCetak}"`, `src="${urlLogoUtamaJadilo}"`)
-                .replace(
-                    '<img id="logoUthCetak"',
-                    `<img id="logoUthCetak" onerror="if(!this.dataset.fb){this.dataset.fb='1';this.src='${urlLogoCadangan1}';}else if(this.dataset.fb==='1'){this.dataset.fb='2';this.src='${urlLogoCadangan2}';}else{this.style.display='none';}"`
-                );
-
-            const styleUntukPrintJobs = `
-                <style>
-                    .jadilo-print-job-wrap {
-                        font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
-                        color: #000;
-                        font-size: 9px;
-                        font-weight: 700;
-                        width: 100%;
-                        box-sizing: border-box;
-                        background: #fff;
-                    }
-                    .jadilo-print-job-wrap .jadwal-rotasi-box {
-                        width: 100%;
-                        height: 230mm;
-                        position: relative;
-                        box-sizing: border-box;
-                        page-break-inside: avoid;
-                        break-inside: avoid;
-                    }
-                    .jadilo-print-job-wrap .cetak-rotasi {
-                        width: 222mm;
-                        transform: rotate(-90deg);
-                        transform-origin: top left;
-                        position: absolute;
-                        top: 222mm;
-                        left: 0;
-                        box-sizing: border-box;
-                    }
-                    .jadilo-print-job-wrap table.jadwal {
-                        width: 100%;
-                        border-collapse: collapse;
-                        table-layout: auto;
-                    }
-                    .jadilo-print-job-wrap table.jadwal th,
-                    .jadilo-print-job-wrap table.jadwal td {
-                        border: 1px solid #000;
-                        padding: 2px 4px;
-                        vertical-align: middle;
-                        font-weight: 700;
-                    }
-                    .jadilo-print-job-wrap .col-auto { white-space: nowrap; }
-                    .jadilo-print-job-wrap .kop-title { font-size: 14px; font-weight: 700; text-align: center; letter-spacing: 0.5px; }
-                    .jadilo-print-job-wrap .ttd-hdr { background: #f2f2f2; font-weight: 700; text-align: center; font-size: 8px; white-space: nowrap; padding-left: 6px !important; padding-right: 6px !important; }
-                    .jadilo-print-job-wrap .ttd-space { height: 20px; }
-                    .jadilo-print-job-wrap .ttd-nama { font-weight: 700; text-align: center; font-size: 8px; white-space: nowrap; }
-                    .jadilo-print-job-wrap .meta-pt { font-weight: 700; font-size: 9px; white-space: nowrap; }
-                    .jadilo-print-job-wrap .meta-tgl { font-weight: 700; font-size: 10px; text-align: center; white-space: nowrap; }
-                    .jadilo-print-job-wrap th.hdr-col { background: #e6e6e6; font-weight: 700; text-align: center; font-size: 8px; text-transform: uppercase; white-space: nowrap; }
-                    .jadilo-print-job-wrap .tc { text-align: center; }
-                    .jadilo-print-job-wrap .ket-cell { padding: 2px 4px !important; }
-                    .jadilo-print-job-wrap .ket-grid,
-                    .jadilo-print-job-wrap .total-rincian {
-                        display: grid;
-                        grid-template-columns: 1fr auto 1fr;
-                        align-items: center;
-                        gap: 2px;
-                        width: 100%;
-                        font-weight: 700;
-                        font-size: 9px;
-                        white-space: nowrap;
-                    }
-                    .jadilo-print-job-wrap .slot-kiri { text-align: right; }
-                    .jadilo-print-job-wrap .slot-tengah { text-align: center; padding: 0 2px; }
-                    .jadilo-print-job-wrap .slot-kanan { text-align: left; }
-                    .jadilo-print-job-wrap .total-ket-cell { padding: 2px 4px !important; font-weight: 700; font-size: 9px; white-space: nowrap; }
-                    .jadilo-print-job-wrap .total-muat-baris { margin-top: 2px; text-align: left; white-space: nowrap; }
-                    .jadilo-print-job-wrap .form-no { margin-top: 4px; font-size: 8px; font-weight: 700; }
-                </style>
-            `;
-
-            const htmlUntukPrintJobs = `
-                ${styleUntukPrintJobs}
-                <div class="jadilo-print-job-wrap">
-                    <div class="jadwal-rotasi-box">
-                        ${bodyUntukPrintJobs}
-                    </div>
-                </div>
-            `;
-
-            window.parent.postMessage({
-                type: 'JADILO_PRINT_JOB',
-                payload: {
-                    tanggalTeks,
-                    whTarget,
-                    totalMuat,
-                    jumlahArmada: armada.length,
-                    html: htmlUntukPrintJobs
-                }
-            }, '*');
-            return;
-        }
 
         const winCetak = window.open('', '_blank', 'width=1280,height=760');
         if (!winCetak) {
@@ -8532,10 +8343,90 @@
             <head>
                 <meta charset="UTF-8">
                 <title>JADWAL PENGIRIMAN - ${tanggalTeks}</title>
-                ${styleDokumenCetak}
+                <style>
+                    @page { size: 330mm 215mm landscape; margin: 12mm; }
+                    body { font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif; color: #000; margin: 14px 18px; font-size: 13px; font-weight: 700; }
+                    table.jadwal { width: 100%; border-collapse: collapse; table-layout: auto; }
+                    table.jadwal th, table.jadwal td { border: 1px solid #000; padding: 4px 8px; vertical-align: middle; font-weight: 700; }
+                    .col-auto { white-space: nowrap; }
+                    .kop-title { font-size: 22px; font-weight: 700; text-align: center; letter-spacing: 0.5px; }
+                    .ttd-hdr { background: #f2f2f2; font-weight: 700; text-align: center; font-size: 12px; white-space: nowrap; padding-left: 12px !important; padding-right: 12px !important; }
+                    .ttd-space { height: 34px; }
+                    .ttd-nama { font-weight: 700; text-align: center; font-size: 11px; white-space: nowrap; }
+                    .meta-pt { font-weight: 700; font-size: 13px; white-space: nowrap; }
+                    .meta-tgl { font-weight: 700; font-size: 14px; text-align: center; white-space: nowrap; }
+                    th.hdr-col { background: #e6e6e6; font-weight: 700; text-align: center; font-size: 12px; text-transform: uppercase; white-space: nowrap; }
+                    .tc { text-align: center; }
+                    .ket-cell { padding: 3px 8px !important; }
+                    .ket-grid, .total-rincian { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 4px; width: 100%; font-weight: 700; font-size: 13px; white-space: nowrap; }
+                    .slot-kiri { text-align: right; }
+                    .slot-tengah { text-align: center; padding: 0 2px; }
+                    .slot-kanan { text-align: left; }
+                    .total-ket-cell { padding: 4px 8px !important; font-weight: 700; font-size: 13px; white-space: nowrap; }
+                    .total-muat-baris { text-align: left; white-space: nowrap; text-transform: uppercase; }
+                    .total-rincian + .total-muat-baris { margin-top: 3px; }
+                    .form-no { margin-top: 8px; font-size: 11px; font-weight: 700; }
+                    @media print {
+                        body { margin: 0; }
+                        .cetak-rotasi {
+                            width: 306mm;
+                            transform: rotate(-90deg);
+                            transform-origin: top left;
+                            position: relative;
+                            top: 308mm;
+                            left: 12mm;
+                        }
+                    }
+                </style>
             </head>
             <body>
-                ${bodyDokumenCetak}
+                <div class="cetak-rotasi">
+                    <table class="jadwal">
+                        <tr>
+                            <td colspan="2" rowspan="3" style="border-bottom:none; text-align:center; vertical-align:middle; padding:4px;">
+                                <img id="logoUthCetak"
+                                    src="${logoUrlCetak}"
+                                    data-fallbacks='["./uth.png","https://raw.githubusercontent.com/komputerwh2-svg/jadilo.github.io/main/uth.png"]'
+                                    alt="Logo UTH"
+                                    style="max-height:56px; max-width:136px; object-fit:contain; display:inline-block;">
+                            </td>
+                            <td colspan="4" rowspan="3" class="kop-title" style="border-bottom:none;">JADWAL PENGIRIMAN</td>
+                            <td class="ttd-hdr">DIBUAT</td>
+                            <td class="ttd-hdr">MENGETAHUI</td>
+                        </tr>
+                        <tr>
+                            <td rowspan="2" class="ttd-space"></td>
+                            <td rowspan="2" class="ttd-space"></td>
+                        </tr>
+                        <tr></tr>
+                        <tr>
+                            <td colspan="2" class="meta-pt">PT. ULAM TIBA HALIM</td>
+                            <td colspan="4" class="meta-tgl">TANGGAL : ${tanggalTeks}</td>
+                            <td class="ttd-nama">KUSUMA</td>
+                            <td class="ttd-nama">B DIMAS W</td>
+                        </tr>
+                        <tr>
+                            <th class="hdr-col">NO</th>
+                            <th class="hdr-col">EXPEDISI</th>
+                            <th class="hdr-col">NOMOR POLISI</th>
+                            <th class="hdr-col">JENIS MOBIL</th>
+                            <th class="hdr-col">TUJUAN</th>
+                            <th class="hdr-col">KOTA</th>
+                            <th class="hdr-col">DRIVER</th>
+                            <th class="hdr-col">KETERANGAN</th>
+                        </tr>
+                        ${barisHtml}
+                        <tr>
+                            <td colspan="7" style="border-left:none; border-bottom:none;"></td>
+                            <td class="total-ket-cell">
+                                ${totalRincianHtml}
+                                <div class="total-muat-baris">TOTAL MUAT = ${totalMuat.toLocaleString('id-ID')} KARTON</div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div class="form-no">NO Formulir : 02.UM/01-05-02/01/0</div>
+                </div>
 
                 <script>
                     (function() {
