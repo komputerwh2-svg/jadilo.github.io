@@ -8326,7 +8326,7 @@
 
         const totalMuat = sumKiri + sumTengah + sumKanan;
         const totalRincianHtml = buatBlokTigaSlot(sumKiri, sumTengah, sumKanan, true);
-        const logoUrlCetak = 'https://komputerwh2-svg.github.io/uth.png';
+        const logoUrlCetak = 'https://komputerwh2-svg.github.io/jadilo.github.io/uth.png';
 
         const styleDokumenCetak = `
             <style>
@@ -8441,19 +8441,18 @@
                     }
                     .jadilo-print-job-wrap .jadwal-rotasi-box {
                         width: 100%;
-                        height: 192mm;
-                        overflow: hidden;
+                        height: 275mm;
                         position: relative;
                         box-sizing: border-box;
                         page-break-inside: avoid;
                         break-inside: avoid;
                     }
                     .jadilo-print-job-wrap .cetak-rotasi {
-                        width: 185mm;
+                        width: 265mm;
                         transform: rotate(-90deg);
                         transform-origin: top left;
                         position: absolute;
-                        top: 186mm;
+                        top: 268mm;
                         left: 0;
                         box-sizing: border-box;
                     }
@@ -8470,9 +8469,9 @@
                         font-weight: 700;
                     }
                     .jadilo-print-job-wrap .col-auto { white-space: nowrap; }
-                    .jadilo-print-job-wrap .kop-title { font-size: 15px; font-weight: 700; text-align: center; letter-spacing: 0.5px; }
+                    .jadilo-print-job-wrap .kop-title { font-size: 16px; font-weight: 700; text-align: center; letter-spacing: 0.5px; }
                     .jadilo-print-job-wrap .ttd-hdr { background: #f2f2f2; font-weight: 700; text-align: center; font-size: 9px; white-space: nowrap; padding-left: 8px !important; padding-right: 8px !important; }
-                    .jadilo-print-job-wrap .ttd-space { height: 22px; }
+                    .jadilo-print-job-wrap .ttd-space { height: 24px; }
                     .jadilo-print-job-wrap .ttd-nama { font-weight: 700; text-align: center; font-size: 9px; white-space: nowrap; }
                     .jadilo-print-job-wrap .meta-pt { font-weight: 700; font-size: 10px; white-space: nowrap; }
                     .jadilo-print-job-wrap .meta-tgl { font-weight: 700; font-size: 11px; text-align: center; white-space: nowrap; }
@@ -8520,6 +8519,81 @@
             }, '*');
             return;
         }
+
+        const winCetak = window.open('', '_blank', 'width=1280,height=760');
+        if (!winCetak) {
+            window.print();
+            return;
+        }
+
+        winCetak.document.write(`
+            <!DOCTYPE html>
+            <html lang="id">
+            <head>
+                <meta charset="UTF-8">
+                <title>JADWAL PENGIRIMAN - ${tanggalTeks}</title>
+                ${styleDokumenCetak}
+            </head>
+            <body>
+                ${bodyDokumenCetak}
+
+                <script>
+                    (function() {
+                        const img = document.getElementById('logoUthCetak');
+                        let fallbacks = [];
+                        try {
+                            fallbacks = JSON.parse(img.getAttribute('data-fallbacks') || '[]').filter(u => u && u !== img.src);
+                        } catch (_) {}
+                        let idxFb = 0;
+                        let sudahPrint = false;
+                        let sudahDitutup = false;
+
+                        const tutupWindowCetak = () => {
+                            if (sudahDitutup) return;
+                            sudahDitutup = true;
+                            setTimeout(() => {
+                                try {
+                                    if (!window.closed) window.close();
+                                } catch (_) {}
+                            }, 120);
+                        };
+
+                        window.addEventListener('afterprint', tutupWindowCetak);
+
+                        const mulaiPrint = () => {
+                            if (sudahPrint) return;
+                            sudahPrint = true;
+                            setTimeout(() => {
+                                window.print();
+                                setTimeout(tutupWindowCetak, 450);
+                            }, 180);
+                        };
+
+                        if (img) {
+                            img.onerror = function() {
+                                if (idxFb < fallbacks.length) {
+                                    img.src = fallbacks[idxFb++];
+                                } else {
+                                    img.style.display = 'none';
+                                    mulaiPrint();
+                                }
+                            };
+                            img.onload = mulaiPrint;
+                            if (img.complete && img.naturalWidth > 0) {
+                                mulaiPrint();
+                            } else {
+                                setTimeout(mulaiPrint, 1200);
+                            }
+                        } else {
+                            window.onload = mulaiPrint;
+                            setTimeout(mulaiPrint, 300);
+                        }
+                    })();
+                <\/script>
+            </body>
+            </html>
+        `);
+        winCetak.document.close();
     }
 
     async function simpanBonKbkbKeFirebase() {
