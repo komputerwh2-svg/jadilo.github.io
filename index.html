@@ -6283,13 +6283,34 @@
                 item: dataLokal
             };
 
-            const nilaiWh1 = Number(wh1 ?? dataLokal.wh1 ?? 0) || 0;
-            const nilaiWh2 = Number(wh2 ?? dataLokal.wh2 ?? 0) || 0;
-
             const nilaiWh1Tambahan = Number(dataLokal.wh1_tambahan ?? dataLokal.tambahan_wh1 ?? 0) || 0;
             const nilaiWh1Titipan = Number(dataLokal.wh1_titipan ?? dataLokal.titipan_wh1 ?? 0) || 0;
             const nilaiWh2Tambahan = Number(dataLokal.wh2_tambahan ?? dataLokal.tambahan_wh2 ?? 0) || 0;
             const nilaiWh2Titipan = Number(dataLokal.wh2_titipan ?? dataLokal.titipan_wh2 ?? 0) || 0;
+
+            const punyaDetailWh1 =
+                dataLokal.wh1_utama !== undefined ||
+                dataLokal.utama_wh1 !== undefined ||
+                dataLokal.wh1_tambahan !== undefined ||
+                dataLokal.tambahan_wh1 !== undefined ||
+                dataLokal.wh1_titipan !== undefined ||
+                dataLokal.titipan_wh1 !== undefined;
+
+            const punyaDetailWh2 =
+                dataLokal.wh2_utama !== undefined ||
+                dataLokal.utama_wh2 !== undefined ||
+                dataLokal.wh2_tambahan !== undefined ||
+                dataLokal.tambahan_wh2 !== undefined ||
+                dataLokal.wh2_titipan !== undefined ||
+                dataLokal.titipan_wh2 !== undefined;
+
+            const nilaiWh1 = punyaDetailWh1
+                ? (Number(dataLokal.wh1_utama ?? dataLokal.utama_wh1 ?? 0) || 0)
+                : (Number(wh1 ?? dataLokal.wh1 ?? 0) || 0);
+
+            const nilaiWh2 = punyaDetailWh2
+                ? (Number(dataLokal.wh2_utama ?? dataLokal.utama_wh2 ?? 0) || 0)
+                : (Number(wh2 ?? dataLokal.wh2 ?? 0) || 0);
 
             const inputWh1 = document.getElementById('val-wh1');
             const inputWh1Tamb = document.getElementById('val-wh1-tambahan');
@@ -7753,26 +7774,58 @@
 
     /**
      * Memetakan nilai default 3 kolom Bon KBKB dari data armada di `list`:
-     * - Kiri   : qty titipan dari WH lawan yang masuk ke bon WH target
-     * - Tengah : qty muat utama WH target
-     * - Kanan  : qty titipan khusus (promosi / HRD / dll)
+     * - Kiri   : qty titipan antar WH (dipertahankan sesuai alur yang ada)
+     * - Tengah : gabungan qty muat utama + tambahan WH target
+     * - Kanan  : qty titipan WH target (untuk kolom titipan promosi / HRD / dll)
      */
     function ambilNilaiDefaultBonArmada(item, whTarget) {
-        const isWh2 = whTarget !== 'WH1';
+        if (!item || typeof item !== 'object') {
+            return { kiri: 0, tengah: 0, kanan: 0 };
+        }
 
-        const kiri = isWh2
-            ? (Number(item.titipan_wh1_ke_wh2 ?? item.wh1_titipan_wh2 ?? item.wh1_titipan ?? 0) || 0)
-            : (Number(item.titipan_wh2_ke_wh1 ?? item.wh2_titipan_wh1 ?? item.wh2_titipan ?? 0) || 0);
+        const isWh2 = String(whTarget || sinkronGudangBonKbkbUser() || 'WH2').toUpperCase() !== 'WH1';
 
-        const tengah = isWh2
-            ? (Number(item.wh2_utama ?? item.wh2 ?? 0) || 0)
-            : (Number(item.wh1_utama ?? item.wh1 ?? 0) || 0);
+        const ambilAngka = (...keys) => {
+            for (const k of keys) {
+                if (item[k] !== undefined && item[k] !== null && item[k] !== '') {
+                    const n = parseInt(String(item[k]).replace(/[^\d-]/g, ''), 10);
+                    if (!Number.isNaN(n)) return Math.max(0, n);
+                }
+            }
+            return 0;
+        };
 
-        const kanan = isWh2
-            ? (Number(item.wh2_titipan_khusus ?? item.titipan_promosi_wh2 ?? item.titipan_hrd_wh2 ?? 0) || 0)
-            : (Number(item.wh1_titipan_khusus ?? item.titipan_promosi_wh1 ?? item.titipan_hrd_wh1 ?? 0) || 0);
+        const keysUtama = isWh2
+            ? ['wh2_utama', 'wh2Utama', 'muat_utama_wh2', 'muatUtamaWh2', 'utama_wh2']
+            : ['wh1_utama', 'wh1Utama', 'muat_utama_wh1', 'muatUtamaWh1', 'utama_wh1'];
 
-        return { kiri, tengah, kanan };
+        const keysTambahan = isWh2
+            ? ['wh2_tambahan', 'wh2Tambahan', 'tambahan_wh2', 'tambahanWh2', 'muat_tambahan_wh2']
+            : ['wh1_tambahan', 'wh1Tambahan', 'tambahan_wh1', 'tambahanWh1', 'muat_tambahan_wh1'];
+
+        const keysTitipan = isWh2
+            ? ['wh2_titipan', 'wh2Titipan', 'titipan_wh2', 'titipanWh2', 'qty_titipan_wh2']
+            : ['wh1_titipan', 'wh1Titipan', 'titipan_wh1', 'titipanWh1', 'qty_titipan_wh1'];
+
+        const utama = ambilAngka(...keysUtama);
+        const tambahan = ambilAngka(...keysTambahan);
+        const titipan = ambilAngka(...keysTitipan);
+
+        const punyaFieldRincian = [...keysUtama, ...keysTambahan, ...keysTitipan].some(
+            (k) => item[k] !== undefined && item[k] !== null && item[k] !== ''
+        );
+
+        const gabunganUtama = (utama + tambahan) > 0
+            ? (utama + tambahan)
+            : (!punyaFieldRincian
+                ? (isWh2 ? ambilAngka('wh2', 'muat_wh2', 'muatWh2') : ambilAngka('wh1', 'muat_wh1', 'muatWh1'))
+                : 0);
+
+        return {
+            kiri: 0,
+            tengah: gabunganUtama,
+            kanan: titipan
+        };
     }
 
     function ambilQtyMuatWhLawan(item, whTarget) {
@@ -7857,9 +7910,22 @@
                 const targetArmada = cocokIdx >= 0 ? armadaAktif[cocokIdx] : null;
                 const itemId = targetArmada ? (targetArmada.id ?? cocokIdx) : (savedRow.id ?? idx);
 
+                const defArmada = targetArmada && typeof ambilNilaiDefaultBonArmada === 'function'
+                    ? ambilNilaiDefaultBonArmada(targetArmada, gudang)
+                    : { kiri: 0, tengah: 0, kanan: 0 };
+
+                const punyaRincianArmada = targetArmada && (
+                    targetArmada.wh2_utama !== undefined || targetArmada.wh2_tambahan !== undefined || targetArmada.wh2_titipan !== undefined ||
+                    targetArmada.wh1_utama !== undefined || targetArmada.wh1_tambahan !== undefined || targetArmada.wh1_titipan !== undefined
+                );
+
                 const kiriSaved = Math.max(0, parseInt(savedRow.titipan_wh_lain ?? savedRow.kiri ?? 0, 10) || 0);
-                const tengahSaved = Math.max(0, parseInt(savedRow.muat_utama ?? savedRow.tengah ?? 0, 10) || 0);
-                const kananSaved = Math.max(0, parseInt(savedRow.titipan_khusus ?? savedRow.kanan ?? 0, 10) || 0);
+                const tengahSaved = punyaRincianArmada
+                    ? defArmada.tengah
+                    : Math.max(0, parseInt(savedRow.muat_utama ?? savedRow.tengah ?? defArmada.tengah ?? 0, 10) || 0);
+                const kananSaved = punyaRincianArmada
+                    ? defArmada.kanan
+                    : Math.max(0, parseInt(savedRow.titipan_khusus ?? savedRow.kanan ?? defArmada.kanan ?? 0, 10) || 0);
 
                 const nilaiRow = {
                     kiri: kiriSaved,
